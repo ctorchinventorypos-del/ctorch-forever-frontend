@@ -152,18 +152,15 @@ h2{ font-size:19px; }
 }
 .tip:focus-visible{ box-shadow:0 0 0 3px var(--green-100); }
 .tip-bubble{
-  position:absolute; bottom:130%; left:50%; transform:translateX(-50%);
   background:var(--green-900); color:#eafff1; font-weight:500; font-size:12.5px;
-  padding:8px 11px; border-radius:8px; width:max-content; max-width:240px; line-height:1.4;
-  z-index:20; box-shadow:var(--shadow); text-align:left;
+  padding:8px 11px; border-radius:8px; max-width:260px; line-height:1.4;
+  z-index:1000; box-shadow:var(--shadow); text-align:left; pointer-events:none;
 }
-.tip-bubble::after{
-  content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+.tip-arrow{
+  position:absolute; top:100%; width:0; height:0;
   border:6px solid transparent; border-top-color:var(--green-900);
+  transform:translateX(-50%);
 }
-/* Variant: open the bubble toward the left, for chips near the right edge */
-.tip.tip-left .tip-bubble{ left:auto; right:0; transform:none; }
-.tip.tip-left .tip-bubble::after{ left:auto; right:8px; transform:none; }
 
 /* ---------------- Misc ---------------- */
 .banner-error{ background:#fbeee8; border:1px solid #eccdbf; color:#8f3c1e; padding:11px 14px; border-radius:var(--radius-sm); font-size:14px; margin-bottom:14px; }
@@ -238,3 +235,44 @@ h2{ font-size:19px; }
   .nav-link{ padding:13px 12px; }
   .btn{ min-height:44px; }
 }
+
+/* ---------------- Inventory / tables / modals ---------------- */
+.toolbar-row{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; align-items:center; }
+.toolbar-row .grow{ flex:1; min-width:160px; }
+.search{ position:relative; flex:1; min-width:180px; }
+.search input{ padding-left:38px; }
+.search .mag{ position:absolute; left:13px; top:50%; transform:translateY(-50%); opacity:.5; }
+
+.cat-group{ margin-bottom:22px; }
+.cat-title{ display:flex; align-items:center; gap:8px; margin:0 0 10px; font-size:15px; color:var(--green-800); font-weight:800; }
+.cat-title .count{ color:var(--muted); font-weight:600; font-size:13px; }
+
+.table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); }
+table.t{ width:100%; border-collapse:collapse; min-width:680px; }
+table.t th{ text-align:left; font-size:12.5px; color:var(--muted); font-weight:700; padding:11px 14px; border-bottom:1px solid var(--line); background:var(--surface-2); }
+table.t td{ padding:12px 14px; border-bottom:1px solid var(--line); font-size:14px; }
+table.t tr:last-child td{ border-bottom:none; }
+table.t .num{ text-align:right; font-variant-numeric:tabular-nums; }
+.code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; color:var(--green-800); background:var(--green-50); padding:2px 7px; border-radius:6px; }
+.stockbadge{ display:inline-flex; align-items:center; gap:6px; font-weight:700; cursor:pointer; color:var(--green-800); background:none; border:none; font-family:var(--font); font-size:14px; }
+.stockbadge:hover{ text-decoration:underline; }
+.linkbtn{ background:none; border:none; color:var(--green-700); font-weight:700; cursor:pointer; font-family:var(--font); font-size:13.5px; padding:0; }
+
+.tag{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; }
+.tag-wh{ background:#e7eef9; color:#2b4a8b; }
+.tag-store{ background:var(--green-100); color:var(--green-800); }
+
+.modal-backdrop{ position:fixed; inset:0; background:rgba(15,40,28,.45); display:grid; place-items:center; padding:18px; z-index:60; }
+.modal{ width:100%; max-width:460px; background:var(--surface); border-radius:var(--radius); box-shadow:0 20px 50px rgba(0,0,0,.25); max-height:92vh; display:flex; flex-direction:column; }
+.modal-wide{ max-width:620px; }
+.modal-head{ display:flex; align-items:center; padding:16px 18px; border-bottom:1px solid var(--line); }
+.modal-head h2{ flex:1; font-size:17px; }
+.modal-head .x{ border:none; background:none; font-size:24px; line-height:1; cursor:pointer; color:var(--muted); }
+.modal-body{ padding:18px; overflow-y:auto; }
+.modal-foot{ padding:14px 18px; border-top:1px solid var(--line); display:flex; gap:10px; justify-content:flex-end; }
+.row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:480px){ .row2{ grid-template-columns:1fr; } }
+
+.list-line{ display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--line); }
+.list-line:last-child{ border-bottom:none; }
+.list-line .grow{ flex:1; }

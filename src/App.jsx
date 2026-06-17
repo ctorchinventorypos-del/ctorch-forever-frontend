@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Placeholder from './pages/Placeholder';
+import Inventory from './pages/Inventory';
 
 export default function App() {
   return (
@@ -22,7 +23,7 @@ export default function App() {
         }
       >
         <Route path="/" element={<Dashboard />} />
-        <Route path="/inventory" element={<Placeholder title="Inventory" />} />
+        <Route path="/inventory" element={<Inventory />} />
         <Route path="/sales" element={<Placeholder title="Sales" />} />
         <Route path="/customers" element={<Placeholder title="Customers" />} />
         <Route path="/records" element={<Placeholder title="Records" />} />
