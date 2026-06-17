@@ -152,16 +152,18 @@ h2{ font-size:19px; }
 }
 .tip:focus-visible{ box-shadow:0 0 0 3px var(--green-100); }
 .tip-bubble{
+  position:absolute; bottom:calc(100% + 9px); left:50%; transform:translateX(-50%);
   background:var(--green-900); color:#eafff1; font-weight:500; font-size:12.5px;
-  padding:8px 11px; border-radius:8px; max-width:260px; line-height:1.4;
+  padding:8px 11px; border-radius:8px; width:max-content; max-width:240px; line-height:1.4;
   z-index:1000; box-shadow:var(--shadow); text-align:left; pointer-events:none;
 }
-.tip-arrow{
-  position:absolute; top:100%; width:0; height:0;
+.tip-bubble::after{
+  content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%);
   border:6px solid transparent; border-top-color:var(--green-900);
-  transform:translateX(-50%);
 }
-.tip-bubble.below .tip-arrow{
+/* Top-of-screen chips open downward instead of upward */
+.tip.below .tip-bubble{ bottom:auto; top:calc(100% + 9px); }
+.tip.below .tip-bubble::after{
   top:auto; bottom:100%;
   border-top-color:transparent; border-bottom-color:var(--green-900);
 }

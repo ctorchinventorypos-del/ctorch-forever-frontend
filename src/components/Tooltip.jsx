@@ -1,65 +1,27 @@
 // ============================================================
 //  Tooltip: a "?" chip that shows a plain-language hint.
-//  The bubble hangs directly under (or above) the chip, with the
-//  arrow pointing right at it, and never runs off the screen.
+//  The bubble is anchored to the chip in CSS, so its arrow always
+//  grows straight out of the "?" it belongs to. By default it
+//  opens upward; pass `below` for chips at the very top of the
+//  screen so the bubble drops downward instead.
 // ============================================================
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useState } from 'react';
 
-export default function Tooltip({ text }) {
+export default function Tooltip({ text, below }) {
   const [open, setOpen] = useState(false);
-  const chipRef = useRef(null);
-  const bubbleRef = useRef(null);
-  const [pos, setPos] = useState(null);
-
-  useLayoutEffect(() => {
-    if (!open || !chipRef.current || !bubbleRef.current) return;
-    const c = chipRef.current.getBoundingClientRect();
-    const b = bubbleRef.current.getBoundingClientRect();
-    const margin = 10;
-    const gap = 9;
-    const chipCenter = c.left + c.width / 2;
-
-    // Center the bubble under (or over) the chip, then keep it on-screen.
-    let left = chipCenter - b.width / 2;
-    left = Math.max(margin, Math.min(left, window.innerWidth - b.width - margin));
-
-    // Flip below the chip when there isn't room above.
-    const below = c.top < b.height + gap + margin;
-    const top = below ? c.bottom + gap : c.top - gap - b.height;
-
-    setPos({ left, top, below, arrowLeft: chipCenter - left });
-  }, [open]);
-
-  const openTip = () => { setPos(null); setOpen(true); };
-  const closeTip = () => { setOpen(false); setPos(null); };
-
   return (
     <span
-      ref={chipRef}
-      className="tip"
+      className={`tip${below ? ' below' : ''}`}
       tabIndex={0}
       role="button"
       aria-label={text}
-      onMouseEnter={openTip}
-      onMouseLeave={closeTip}
-      onFocus={openTip}
-      onBlur={closeTip}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
     >
       ?
-      {open && (
-        <span
-          ref={bubbleRef}
-          className={`tip-bubble${pos?.below ? ' below' : ''}`}
-          style={
-            pos
-              ? { position: 'fixed', top: pos.top, left: pos.left }
-              : { position: 'fixed', top: 0, left: 0, visibility: 'hidden' }
-          }
-        >
-          {text}
-          <span className="tip-arrow" style={{ left: pos ? pos.arrowLeft : 0 }} />
-        </span>
-      )}
+      {open && <span className="tip-bubble">{text}</span>}
     </span>
   );
 }

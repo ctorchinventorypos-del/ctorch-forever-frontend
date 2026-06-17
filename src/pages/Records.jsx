@@ -48,6 +48,10 @@ export default function Records() {
     window.open(`/${prefix}-invoice.html?id=${id}`, '_blank');
   }
 
+  function printReceipt(id) {
+    window.open(`/payment-receipt.html?id=${id}`, '_blank');
+  }
+
   // running total for the footer
   const total = rows.reduce((s, r) => s + Number(r.total_amount ?? r.amount ?? r.refund_amount ?? 0), 0);
 
@@ -108,7 +112,7 @@ export default function Records() {
             {cfg.kind === 'payment' && (
               <>
                 <thead>
-                  <tr><th>Date</th><th>Customer</th><th>Received by</th><th className="num">Amount</th></tr>
+                  <tr><th>Date</th><th>Customer</th><th>Received by</th><th className="num">Amount</th><th></th></tr>
                 </thead>
                 <tbody>
                   {rows.map((r) => (
@@ -117,6 +121,7 @@ export default function Records() {
                       <td>{r.customer_name}</td>
                       <td className="subtle">{r.received_by || '—'}</td>
                       <td className="num" style={{ color: 'var(--green-700)', fontWeight: 700 }}>{naira(r.amount)}</td>
+                      <td className="num"><button className="linkbtn" onClick={() => printReceipt(r.id)}>🖨️ Receipt</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -149,8 +154,7 @@ export default function Records() {
                   {rows.length} record{rows.length === 1 ? '' : 's'}
                 </td>
                 <td className="num" style={{ fontWeight: 800 }}>{naira(total)}</td>
-                {cfg.kind === 'sale' && <td></td>}
-                {cfg.kind === 'return' && <td></td>}
+                <td></td>
               </tr>
             </tfoot>
           </table>

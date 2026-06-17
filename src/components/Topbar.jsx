@@ -32,7 +32,7 @@ export default function Topbar({ onMenu }) {
           </button>
         ))}
       </div>
-      <Tooltip text="Switch between your two businesses. Everything you see — stock, sales, customers — belongs to the company shown here." />
+      <Tooltip below text="Switch between your two businesses. Everything you see — stock, sales, customers — belongs to the company shown here." />
 
       <div className="spacer" />
 
