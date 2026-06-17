@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CTORCH — Cash Sales Invoice</title>
+<style>
+  /* ============================================================
+     CTORCH (Natures Breeze Nig. Ltd.) — printable Cash Sales Invoice
+     Blue theme to match the printed pad.
+     ============================================================ */
+  :root{
+    --blue:#16358c;
+    --blue-line:#1f3a93;
+    --red:#d8232a;
+    --pink:#f6b3b0;
+    --pink-tint:#f7c4c2;
+    --ink:#16358c;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:#f0f0f0; color:#1a1a1a;
+    font-family:"Segoe UI", Arial, sans-serif;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+
+  .toolbar{ text-align:center; padding:14px; }
+  .toolbar button{
+    background:var(--blue); color:#fff; border:none; border-radius:6px;
+    padding:10px 22px; font-size:15px; cursor:pointer;
+  }
+
+  .invoice{
+    width:820px; margin:0 auto 30px; background:#fff; padding:16px 18px 0;
+    box-shadow:0 4px 18px rgba(0,0,0,.15);
+  }
+
+  /* ---- Header ---- */
+  .company{
+    text-align:center; color:var(--blue); font-family:Georgia,"Times New Roman",serif;
+    font-weight:800; font-size:48px; line-height:1; font-variant:small-caps;
+    letter-spacing:1px;
+  }
+  .subsidiary{
+    text-align:center; color:var(--blue); font-weight:800; font-size:13.5px;
+    border-top:2px solid var(--red); border-bottom:2px solid var(--red);
+    padding:3px 0; margin-top:4px;
+  }
+
+  /* ---- Office / title / phones ---- */
+  .band{ display:flex; align-items:flex-start; margin-top:8px; gap:10px; }
+  .office{ flex:1; color:var(--blue); font-weight:800; font-size:12.5px; line-height:1.35; }
+  .title-pill{
+    flex:0 0 auto; align-self:center; background:var(--red); color:#fff;
+    font-weight:800; font-size:22px; padding:6px 20px; border-radius:18px;
+    border:2px solid #fff; outline:2px solid var(--red);
+  }
+  .phones{ flex:1; text-align:right; color:var(--blue); font-weight:800; font-size:12.5px; line-height:1.35; }
+
+  /* ---- Name box / invoice no / date ---- */
+  .boxes{ display:flex; gap:14px; margin-top:10px; align-items:flex-start; }
+  .namebox{
+    flex:1; border:2px solid var(--blue); border-radius:14px; padding:8px 12px;
+    color:var(--blue); font-weight:800; font-size:13px;
+  }
+  .namebox .row{ display:flex; align-items:flex-end; margin:7px 0; }
+  .namebox .row span{ white-space:nowrap; margin-right:6px; }
+  .namebox .row .line{ flex:1; border-bottom:1.4px solid var(--blue); height:15px; }
+  .rightbox{ flex:0 0 330px; }
+  .invno{
+    border:2px solid var(--blue); border-radius:14px; padding:9px 12px;
+    color:var(--blue); font-weight:800; font-size:14px; display:flex; align-items:flex-end;
+  }
+  .invno .line{ flex:1; border-bottom:1.4px solid var(--blue); height:16px; margin-left:6px; }
+  .datebox{ border:2px solid var(--blue); border-radius:6px; margin-top:8px; overflow:hidden; }
+  .datebox .h{ text-align:center; color:var(--blue); font-weight:800; font-size:13px; padding:3px 0; border-bottom:2px solid var(--blue); }
+  .datebox .dmy{ display:flex; }
+  .datebox .dmy .cell{ flex:1; text-align:center; border-right:2px solid var(--blue); }
+  .datebox .dmy .cell:last-child{ border-right:none; }
+  .datebox .dmy .cell .lbl{ color:var(--blue); font-weight:800; font-size:12px; padding:2px 0; border-bottom:2px solid var(--blue); }
+  .datebox .dmy .cell .val{ font-size:14px; padding:5px 0; color:var(--blue); font-weight:700; }
+
+  /* ---- Goods table ---- */
+  table.goods{ width:100%; border-collapse:collapse; margin-top:12px; }
+  table.goods th, table.goods td{ border:1.4px solid var(--blue); }
+  table.goods thead th{
+    background:var(--blue); color:#fff; font-weight:800; font-size:13px;
+    padding:5px 4px; text-align:center;
+  }
+  .c-qty{ width:88px; text-align:center; font-weight:700; color:var(--blue); }
+  .c-desc{ }
+  .c-price{ width:84px; text-align:right; }
+  .c-naira{ width:120px; text-align:right; background:var(--pink); }
+  .c-kobo{ width:40px; text-align:center; background:var(--pink); }
+  table.goods tbody td{ height:25px; font-size:13px; padding:3px 6px; color:#1a1a1a; }
+  table.goods tbody td.c-naira, table.goods tbody td.c-kobo{ background:var(--pink-tint); }
+
+  .total-row td{ border:1.4px solid var(--blue); }
+  .total-row .t-lbl{
+    text-align:right; color:var(--red); font-weight:800; font-size:20px; padding:4px 10px;
+    border:none;
+  }
+
+  /* ---- Footer ---- */
+  .notreturn{ color:var(--blue); font-style:italic; font-weight:700; font-size:12px; margin-top:6px; }
+  .words{ color:var(--blue); font-weight:800; font-size:13px; margin-top:8px; }
+  .words .line{ display:inline-block; border-bottom:1.4px solid var(--blue); min-width:560px; }
+  .nk{ color:var(--blue); font-weight:800; font-size:13px; margin-top:10px; display:flex; gap:18px; align-items:flex-end; }
+  .nk .line{ display:inline-block; border-bottom:1.4px solid var(--blue); width:130px; }
+  .nk .prep{ flex:1; text-align:right; }
+  .nk .prep .line{ width:180px; }
+
+  .holiness{
+    text-align:center; margin:12px auto 8px; background:var(--red); color:#fff;
+    font-style:italic; font-weight:800; font-size:15px; padding:4px 26px;
+    border-radius:16px; width:max-content;
+  }
+  .signrow{ display:flex; align-items:center; color:var(--blue); font-weight:800; font-size:13px; }
+  .signrow .cust{ flex:1; }
+  .signrow .cust .line{ display:inline-block; border-bottom:1.4px solid var(--blue); width:150px; margin-left:6px; }
+  .signrow .orig{ flex:0 0 auto; color:var(--red); font-weight:800; font-size:24px; letter-spacing:4px; }
+  .signrow .for{ flex:1; text-align:right; }
+
+  .watermark{
+    margin-top:10px; background:var(--red); color:#ffd9d9; font-style:italic; font-weight:800;
+    font-size:13px; padding:5px 4px; line-height:1.5; overflow:hidden; white-space:nowrap;
+  }
+
+  @media print{
+    body{ background:#fff; }
+    .toolbar{ display:none; }
+    .invoice{ box-shadow:none; }
+    @page{ size:A4 portrait; margin:7mm; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <button onclick="window.print()">Print this invoice</button>
+  </div>
+
+  <div class="invoice">
+
+    <!-- ================= HEADER ================= -->
+    <div class="company">Natures Breeze Nig. Ltd.</div>
+    <div class="subsidiary">A SUBSIDIARY OF NARCO NIG. WIRE &amp; CABLE LTD. / KABLE LIGHT WIRE &amp; CABLE</div>
+
+    <div class="band">
+      <div class="office">
+        HEAD OFFICE:<br>
+        BLOCK 27 NO 23,<br>
+        SHOP 15, ALABA INT'L MARKET,<br>
+        OJO - LAGOS.
+      </div>
+      <div class="title-pill">CASH SALES INVOICE</div>
+      <div class="phones">
+        TELEPHONES:<br>
+        08033653376<br>
+        08088082694
+      </div>
+    </div>
+
+    <!-- ================= NAME / INVOICE NO / DATE ================= -->
+    <div class="boxes">
+      <div class="namebox">
+        <div class="row"><span>Name</span><span class="line" id="cust-name"></span></div>
+        <div class="row"><span>Address</span><span class="line"></span></div>
+        <div class="row"><span style="visibility:hidden">Address</span><span class="line"></span></div>
+        <div class="row"><span>Tel:</span><span class="line" id="cust-tel"></span></div>
+      </div>
+      <div class="rightbox">
+        <div class="invno">INVOICE NO. <span class="line" id="inv-no"></span></div>
+        <div class="datebox">
+          <div class="h">INVOICE DATE</div>
+          <div class="dmy">
+            <div class="cell"><div class="lbl">DAY</div><div class="val" id="d-day"></div></div>
+            <div class="cell"><div class="lbl">MONTH</div><div class="val" id="d-mon"></div></div>
+            <div class="cell"><div class="lbl">YEAR</div><div class="val" id="d-yr"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= GOODS ================= -->
+    <table class="goods">
+      <thead>
+        <tr>
+          <th class="c-qty" rowspan="2">Qty.<br>Ordered</th>
+          <th class="c-desc" rowspan="2">Description of Goods</th>
+          <th class="c-price" rowspan="2">Unit<br>Price</th>
+          <th colspan="2">Amount</th>
+        </tr>
+        <tr>
+          <th class="c-naira" style="color:#fff;background:var(--blue);">₦</th>
+          <th class="c-kobo" style="color:#fff;background:var(--blue);">K</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td class="t-lbl" colspan="3">TOTAL</td>
+          <td class="c-naira" id="total-naira" style="font-weight:800;font-size:15px;"></td>
+          <td class="c-kobo" id="total-kobo" style="font-weight:800;"></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- ================= FOOTER ================= -->
+    <div class="notreturn">Goods sold in good condition are not returnable. No refund of money after payment</div>
+
+    <div class="words">Amount in words <span class="line" id="amount-words"></span></div>
+
+    <div class="nk">
+      <div>Naira <span class="line" id="nk-naira"></span></div>
+      <div>Kobo <span class="line" id="nk-kobo"></span></div>
+      <div class="prep">Prepared by <span class="line" id="prepared-by"></span></div>
+    </div>
+
+    <div class="holiness">...Holiness is the root of success</div>
+
+    <div class="signrow">
+      <div class="cust">CUSTOMER'S SIGN <span class="line"></span></div>
+      <div class="orig">ORIGINAL</div>
+      <div class="for">For: NATURES BREEZE NIG. LTD.</div>
+    </div>
+
+    <div class="watermark" id="watermark"></div>
+
+  </div>
+
+<script>
+  // ============================================================
+  //  SAMPLE DATA — in the app this comes from GET /api/sales/:id .
+  // ============================================================
+  let sale = { invoice_number:"", created_at:new Date().toISOString(), customer_name:"", customer_phone:"", sold_by:"", items:[] };
+
+  const MIN_ROWS = 14;
+
+  const splitNK = (amount) => {
+    const naira = Math.floor(amount);
+    const kobo = Math.round((amount - naira) * 100);
+    return {
+      naira: naira.toLocaleString("en-NG"),
+      kobo: String(kobo).padStart(2, "0")
+    };
+  };
+
+  function nairaInWords(amount){
+    const a = Math.floor(amount);
+    if (a === 0) return "Zero naira only";
+    const ones=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten",
+      "Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+    const tens=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+    function below1000(n){
+      let s="";
+      if(n>=100){ s+=ones[Math.floor(n/100)]+" Hundred"; n%=100; if(n) s+=" and "; }
+      if(n>=20){ s+=tens[Math.floor(n/10)]; n%=10; if(n) s+="-"+ones[n]; }
+      else if(n>0){ s+=ones[n]; }
+      return s;
+    }
+    const units=[["Billion",1e9],["Million",1e6],["Thousand",1e3]];
+    let n=a, parts=[];
+    for(const [name,val] of units){
+      if(n>=val){ parts.push(below1000(Math.floor(n/val))+" "+name); n%=val; }
+    }
+    if(n>0) parts.push(below1000(n));
+    let str = parts.join(", ").trim()+" naira only";
+    return str.charAt(0).toUpperCase()+str.slice(1);
+  }
+
+  function render(){
+    document.getElementById("cust-name").textContent = sale.customer_name || "";
+    document.getElementById("cust-tel").textContent = sale.customer_phone || "";
+    document.getElementById("inv-no").textContent = sale.invoice_number || "";
+    document.getElementById("prepared-by").textContent = sale.sold_by || "";
+
+    const d = new Date(sale.created_at);
+    document.getElementById("d-day").textContent = String(d.getDate()).padStart(2,"0");
+    document.getElementById("d-mon").textContent = String(d.getMonth()+1).padStart(2,"0");
+    document.getElementById("d-yr").textContent = d.getFullYear();
+
+    const tbody = document.getElementById("rows");
+    tbody.innerHTML = "";
+    let total = 0;
+    const rowCount = Math.max(sale.items.length, MIN_ROWS);
+
+    for(let i=0; i<rowCount; i++){
+      const item = sale.items[i];
+      const tr = document.createElement("tr");
+      if(item){
+        const amount = item.quantity * item.unit_price;
+        total += amount;
+        const nk = splitNK(amount);
+        tr.innerHTML =
+          `<td class="c-qty">${item.quantity}</td>`+
+          `<td class="c-desc">${item.name}</td>`+
+          `<td class="c-price">${Number(item.unit_price).toLocaleString("en-NG")}</td>`+
+          `<td class="c-naira">${nk.naira}</td>`+
+          `<td class="c-kobo">${nk.kobo}</td>`;
+      } else {
+        tr.innerHTML =
+          `<td class="c-qty"></td><td class="c-desc"></td><td class="c-price"></td>`+
+          `<td class="c-naira"></td><td class="c-kobo"></td>`;
+      }
+      tbody.appendChild(tr);
+    }
+
+    const tk = splitNK(total);
+    document.getElementById("total-naira").textContent = tk.naira;
+    document.getElementById("total-kobo").textContent = tk.kobo;
+    document.getElementById("nk-naira").textContent = tk.naira;
+    document.getElementById("nk-kobo").textContent = tk.kobo;
+    document.getElementById("amount-words").textContent = nairaInWords(total);
+
+    // bottom watermark strip
+    const wm = " NARCO WIRE & CABLE / KABLE LIGHT WIRE & CABLE ";
+    document.getElementById("watermark").textContent = wm.repeat(4);
+  }
+
+    // ===== Live data: fetch this sale and print =====
+  const params = new URLSearchParams(location.search);
+  const saleId = params.get("id");
+  const apiBase = localStorage.getItem("apiBase");
+  const token = localStorage.getItem("token");
+  const companyId = localStorage.getItem("companyId");
+
+  async function loadAndRender(){
+    if(!saleId || !apiBase){
+      document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">Missing invoice id. Open this from the Sales or Records screen.</p>';
+      return;
+    }
+    try{
+      const res = await fetch(apiBase + "/sales/" + saleId, {
+        headers: { "Authorization": "Bearer " + token, "X-Company-Id": companyId }
+      });
+      if(!res.ok) throw new Error("Could not load this invoice.");
+      const data = await res.json();
+      sale = {
+        invoice_number: data.invoice_number,
+        created_at: data.created_at,
+        customer_name: data.customer_name || "",
+        customer_phone: data.customer_phone || "",
+        sold_by: data.sold_by || "",
+        items: (data.items || []).map(function(it){
+          return { name: it.name, quantity: it.quantity, unit_price: Number(it.unit_price) };
+        })
+      };
+      render();
+      setTimeout(function(){ window.print(); }, 450);
+    }catch(e){
+      document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">' + e.message + '</p>';
+    }
+  }
+  loadAndRender();
+</script>
+</body>
+</html>

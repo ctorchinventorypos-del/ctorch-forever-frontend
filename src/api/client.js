@@ -5,6 +5,9 @@
 // ============================================================
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
+// Save the API base so the standalone print pages (public/*-invoice.html) can use it.
+try { localStorage.setItem('apiBase', BASE); } catch (e) {}
+
 const getToken = () => localStorage.getItem('token');
 const getCompanyId = () => localStorage.getItem('companyId');
 

@@ -1,37 +1,39 @@
 // ============================================================
 //  Tooltip: a "?" chip that shows a plain-language hint.
-//  When it opens it measures itself and clamps inside the
-//  screen, so the bubble can never run off the edge — no matter
-//  where the chip sits (left, right, mobile, anywhere).
+//  It measures itself when it opens and:
+//   - clamps left/right so it never runs off the sides, and
+//   - flips BELOW the chip when there isn't room above (so chips
+//     at the very top of the screen aren't cut off).
 // ============================================================
 import { useState, useRef, useLayoutEffect } from 'react';
 
 export default function Tooltip({ text }) {
   const [open, setOpen] = useState(false);
   const chipRef = useRef(null);
-  const [style, setStyle] = useState(null);
-  const [arrowLeft, setArrowLeft] = useState(0);
+  const bubbleRef = useRef(null);
+  const [pos, setPos] = useState(null);
 
   useLayoutEffect(() => {
-    if (!open || !chipRef.current) return;
-    const r = chipRef.current.getBoundingClientRect();
+    if (!open || !chipRef.current || !bubbleRef.current) return;
+    const c = chipRef.current.getBoundingClientRect();
+    const b = bubbleRef.current.getBoundingClientRect();
     const margin = 10;
+    const gap = 10;
     const maxW = Math.min(260, window.innerWidth - margin * 2);
-    const chipCenter = r.left + r.width / 2;
+    const chipCenter = c.left + c.width / 2;
 
-    // Center on the chip, then pull back inside the screen edges.
     let left = chipCenter - maxW / 2;
     left = Math.max(margin, Math.min(left, window.innerWidth - maxW - margin));
 
-    setStyle({
-      position: 'fixed',
-      top: r.top - 8,
-      left,
-      maxWidth: maxW,
-      transform: 'translateY(-100%)',
-    });
-    setArrowLeft(chipCenter - left); // keep the arrow pointing at the chip
+    // Not enough room above? Drop the bubble below the chip instead.
+    const below = c.top < b.height + gap + margin;
+    const top = below ? c.bottom + gap : c.top - gap - b.height;
+
+    setPos({ left, top, below, arrowLeft: chipCenter - left, maxW });
   }, [open]);
+
+  const openTip = () => { setPos(null); setOpen(true); };
+  const closeTip = () => { setOpen(false); setPos(null); };
 
   return (
     <span
@@ -40,16 +42,25 @@ export default function Tooltip({ text }) {
       tabIndex={0}
       role="button"
       aria-label={text}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
+      onMouseEnter={openTip}
+      onMouseLeave={closeTip}
+      onFocus={openTip}
+      onBlur={closeTip}
     >
       ?
-      {open && style && (
-        <span className="tip-bubble" style={style}>
+      {open && (
+        <span
+          ref={bubbleRef}
+          className={`tip-bubble${pos?.below ? ' below' : ''}`}
+          style={
+            pos
+              ? { position: 'fixed', top: pos.top, left: pos.left, maxWidth: pos.maxW }
+              : { position: 'fixed', top: 0, left: 0, visibility: 'hidden',
+                  maxWidth: Math.min(260, window.innerWidth - 20) }
+          }
+        >
           {text}
-          <span className="tip-arrow" style={{ left: arrowLeft }} />
+          <span className="tip-arrow" style={{ left: pos ? pos.arrowLeft : 0 }} />
         </span>
       )}
     </span>
