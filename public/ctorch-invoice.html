@@ -211,6 +211,7 @@
     <div class="notreturn">Goods sold in good condition are not returnable. No refund of money after payment</div>
 
     <div class="words">Amount in words <span class="line" id="amount-words"></span></div>
+      <div id="credit-summary" style="margin-top:8px;font-weight:700;font-size:14px;display:flex;gap:26px;flex-wrap:wrap;"></div>
 
     <div class="nk">
       <div>Naira <span class="line" id="nk-naira"></span></div>
@@ -343,11 +344,21 @@
         customer_name: data.customer_name || "",
         customer_phone: data.customer_phone || "",
         sold_by: data.sold_by || "",
+        sale_type: data.sale_type,
+        amount_paid: Number(data.amount_paid || 0),
         items: (data.items || []).map(function(it){
           return { name: it.name, quantity: it.quantity, unit_price: Number(it.unit_price) };
         })
       };
       render();
+      var cs = document.getElementById("credit-summary");
+      if(cs && sale.sale_type && sale.sale_type !== "cash"){
+        var tot = (sale.items||[]).reduce(function(s,it){ return s + it.quantity*it.unit_price; }, 0);
+        var paid = Number(sale.amount_paid||0);
+        var bal = Math.max(tot - paid, 0);
+        var f = function(x){ return "\u20a6" + Number(x).toLocaleString("en-NG"); };
+        cs.innerHTML = '<span>Paid: ' + f(paid) + '</span><span>Balance unpaid: ' + f(bal) + '</span>';
+      }
       setTimeout(function(){ window.print(); }, 450);
     }catch(e){
       document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">' + e.message + '</p>';

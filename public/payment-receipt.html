@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payment Receipt</title>
+<style>
+  :root{ --green:#0f7b3a; --green-dark:#0a5c2b; --ink:#16241c; --muted:#5d7065; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:#f0f0f0; font-family:"Segoe UI", Arial, sans-serif; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .toolbar{ text-align:center; padding:14px; }
+  .toolbar button{ background:var(--green); color:#fff; border:none; border-radius:6px; padding:10px 22px; font-size:15px; cursor:pointer; }
+  .receipt{ width:420px; max-width:94vw; margin:0 auto 24px; background:#fff; border:2px solid var(--green);
+    border-radius:10px; padding:22px 24px; box-shadow:0 4px 18px rgba(0,0,0,.12); }
+  .company{ text-align:center; color:var(--green); font-weight:800; font-size:20px; line-height:1.15; }
+  .sub{ text-align:center; color:var(--muted); font-size:12px; margin-top:2px; }
+  .title{ text-align:center; font-weight:800; letter-spacing:1px; margin:14px 0; padding:6px 0;
+    border-top:1.5px dashed var(--green); border-bottom:1.5px dashed var(--green); color:var(--green-dark); }
+  .row{ display:flex; justify-content:space-between; padding:7px 0; font-size:14px; border-bottom:1px dotted #ddd; }
+  .row .l{ color:var(--muted); }
+  .row .v{ font-weight:600; }
+  .big{ font-size:22px; font-weight:800; color:var(--green); }
+  .remain{ font-size:18px; font-weight:800; color:#a96a1e; }
+  .foot{ text-align:center; color:var(--muted); font-size:12px; margin-top:16px; }
+  @media print{ body{ background:#fff; } .toolbar{ display:none; } .receipt{ box-shadow:none; } @page{ margin:10mm; } }
+</style>
+</head>
+<body>
+  <div class="toolbar"><button onclick="window.print()">Print receipt</button></div>
+  <div class="receipt" id="receipt">
+    <div class="company" id="company"></div>
+    <div class="sub" id="company-sub"></div>
+    <div class="title">PAYMENT RECEIPT</div>
+    <div class="row"><span class="l">Receipt no.</span><span class="v" id="rno"></span></div>
+    <div class="row"><span class="l">Date</span><span class="v" id="date"></span></div>
+    <div class="row"><span class="l">Received from</span><span class="v" id="cust"></span></div>
+    <div class="row"><span class="l">Amount paid</span><span class="v big" id="amount"></span></div>
+    <div class="row"><span class="l">Balance remaining</span><span class="v remain" id="remaining"></span></div>
+    <div class="row"><span class="l">Received by</span><span class="v" id="by"></span></div>
+    <div class="foot">Thank you.</div>
+  </div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const id = params.get("id");
+  const apiBase = localStorage.getItem("apiBase");
+  const token = localStorage.getItem("token");
+  const companyId = localStorage.getItem("companyId");
+  const money = (x) => "₦" + Number(x || 0).toLocaleString("en-NG");
+
+  async function run(){
+    if(!id || !apiBase){
+      document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">Missing payment id. Open this from the payment screen.</p>';
+      return;
+    }
+    try{
+      const res = await fetch(apiBase + "/payments/" + id, {
+        headers: { "Authorization": "Bearer " + token, "X-Company-Id": companyId }
+      });
+      if(!res.ok) throw new Error("Could not load this receipt.");
+      const d = await res.json();
+      document.getElementById("company").textContent = d.company_name || "";
+      document.getElementById("company-sub").textContent = [d.company_address, d.company_phone].filter(Boolean).join(" · ");
+      document.getElementById("rno").textContent = "PMT-" + String(d.id).padStart(6, "0");
+      document.getElementById("date").textContent = new Date(d.created_at).toLocaleString("en-NG");
+      document.getElementById("cust").textContent = d.customer_name || "";
+      document.getElementById("amount").textContent = money(d.amount);
+      document.getElementById("remaining").textContent = money(d.remaining);
+      document.getElementById("by").textContent = d.received_by || "";
+      setTimeout(() => window.print(), 400);
+    }catch(e){
+      document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">' + e.message + '</p>';
+    }
+  }
+  run();
+</script>
+</body>
+</html>
