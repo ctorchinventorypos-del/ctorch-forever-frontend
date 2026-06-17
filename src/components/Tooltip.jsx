@@ -1,9 +1,7 @@
 // ============================================================
 //  Tooltip: a "?" chip that shows a plain-language hint.
-//  It measures itself when it opens and:
-//   - clamps left/right so it never runs off the sides, and
-//   - flips BELOW the chip when there isn't room above (so chips
-//     at the very top of the screen aren't cut off).
+//  The bubble hangs directly under (or above) the chip, with the
+//  arrow pointing right at it, and never runs off the screen.
 // ============================================================
 import { useState, useRef, useLayoutEffect } from 'react';
 
@@ -18,18 +16,19 @@ export default function Tooltip({ text }) {
     const c = chipRef.current.getBoundingClientRect();
     const b = bubbleRef.current.getBoundingClientRect();
     const margin = 10;
-    const gap = 10;
-    const maxW = Math.min(260, window.innerWidth - margin * 2);
+    const gap = 9;
     const chipCenter = c.left + c.width / 2;
 
-    let left = chipCenter - maxW / 2;
-    left = Math.max(margin, Math.min(left, window.innerWidth - maxW - margin));
+    // Anchor the bubble so the arrow sits ~18px from its left edge,
+    // landing directly under the chip; then keep it inside the screen.
+    let left = chipCenter - 18;
+    left = Math.max(margin, Math.min(left, window.innerWidth - b.width - margin));
 
-    // Not enough room above? Drop the bubble below the chip instead.
+    // Flip below the chip when there isn't room above.
     const below = c.top < b.height + gap + margin;
     const top = below ? c.bottom + gap : c.top - gap - b.height;
 
-    setPos({ left, top, below, arrowLeft: chipCenter - left, maxW });
+    setPos({ left, top, below, arrowLeft: chipCenter - left });
   }, [open]);
 
   const openTip = () => { setPos(null); setOpen(true); };
@@ -54,9 +53,8 @@ export default function Tooltip({ text }) {
           className={`tip-bubble${pos?.below ? ' below' : ''}`}
           style={
             pos
-              ? { position: 'fixed', top: pos.top, left: pos.left, maxWidth: pos.maxW }
-              : { position: 'fixed', top: 0, left: 0, visibility: 'hidden',
-                  maxWidth: Math.min(260, window.innerWidth - 20) }
+              ? { position: 'fixed', top: pos.top, left: pos.left }
+              : { position: 'fixed', top: 0, left: 0, visibility: 'hidden' }
           }
         >
           {text}

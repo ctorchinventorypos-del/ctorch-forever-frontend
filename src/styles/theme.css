@@ -293,3 +293,13 @@ table.t .num{ text-align:right; font-variant-numeric:tabular-nums; }
 .hint{ font-size:12.5px; color:var(--muted); margin-top:6px; }
 .success-card{ text-align:center; padding:34px 20px; }
 .success-card .big{ font-size:46px; margin-bottom:8px; }
+
+/* ---------------- Customers ---------------- */
+.tabs{ display:inline-flex; gap:4px; background:var(--surface-2); border:1px solid var(--line-strong); border-radius:10px; padding:4px; margin-bottom:16px; }
+.tabs button{ border:none; background:transparent; font-family:var(--font); font-weight:700; font-size:14px; color:var(--muted); padding:8px 16px; border-radius:7px; cursor:pointer; }
+.tabs button.on{ background:var(--surface); color:var(--green-800); box-shadow:var(--shadow); }
+.owed{ font-weight:800; color:var(--amber); }
+.owed.zero{ color:var(--green-700); }
+.sectionhead{ font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin:18px 0 8px; }
+.balance-hero{ background:var(--green-50); border:1px solid var(--green-100); border-radius:var(--radius); padding:16px 18px; display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+.balance-hero .amt{ font-size:26px; font-weight:800; }
