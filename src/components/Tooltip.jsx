@@ -19,9 +19,8 @@ export default function Tooltip({ text }) {
     const gap = 9;
     const chipCenter = c.left + c.width / 2;
 
-    // Anchor the bubble so the arrow sits ~18px from its left edge,
-    // landing directly under the chip; then keep it inside the screen.
-    let left = chipCenter - 18;
+    // Center the bubble under (or over) the chip, then keep it on-screen.
+    let left = chipCenter - b.width / 2;
     left = Math.max(margin, Math.min(left, window.innerWidth - b.width - margin));
 
     // Flip below the chip when there isn't room above.

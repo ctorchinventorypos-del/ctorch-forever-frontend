@@ -11,6 +11,7 @@ import Placeholder from './pages/Placeholder';
 import Inventory from './pages/Inventory';
 import Sales from './pages/Sales';
 import Customers from './pages/Customers';
+import Records from './pages/Records';
 
 export default function App() {
   return (
@@ -28,7 +29,7 @@ export default function App() {
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/sales" element={<Sales />} />
         <Route path="/customers" element={<Customers />} />
-        <Route path="/records" element={<Placeholder title="Records" />} />
+        <Route path="/records" element={<Records />} />
         <Route path="/branches" element={<Placeholder title="Branches" />} />
         <Route
           path="/users"
