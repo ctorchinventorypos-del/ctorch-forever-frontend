@@ -1,15 +1,15 @@
 // ============================================================
 //  Tooltip: a small "?" chip that shows a plain-language hint.
-//  Works on hover and on keyboard focus. Used next to functions
-//  so anyone can learn the app without training.
+//  Works on hover and on keyboard focus. Pass align="left" for
+//  chips near the right edge so the bubble opens inward.
 // ============================================================
 import { useState } from 'react';
 
-export default function Tooltip({ text }) {
+export default function Tooltip({ text, align }) {
   const [open, setOpen] = useState(false);
   return (
     <span
-      className="tip"
+      className={`tip${align === 'left' ? ' tip-left' : ''}`}
       tabIndex={0}
       role="button"
       aria-label={text}

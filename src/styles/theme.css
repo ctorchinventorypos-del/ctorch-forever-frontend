@@ -161,6 +161,9 @@ h2{ font-size:19px; }
   content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%);
   border:6px solid transparent; border-top-color:var(--green-900);
 }
+/* Variant: open the bubble toward the left, for chips near the right edge */
+.tip.tip-left .tip-bubble{ left:auto; right:0; transform:none; }
+.tip.tip-left .tip-bubble::after{ left:auto; right:8px; transform:none; }
 
 /* ---------------- Misc ---------------- */
 .banner-error{ background:#fbeee8; border:1px solid #eccdbf; color:#8f3c1e; padding:11px 14px; border-radius:var(--radius-sm); font-size:14px; margin-bottom:14px; }
