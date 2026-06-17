@@ -7,11 +7,12 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Placeholder from './pages/Placeholder';
 import Inventory from './pages/Inventory';
 import Sales from './pages/Sales';
 import Customers from './pages/Customers';
 import Records from './pages/Records';
+import Branches from './pages/Branches';
+import Users from './pages/Users';
 
 export default function App() {
   return (
@@ -30,12 +31,12 @@ export default function App() {
         <Route path="/sales" element={<Sales />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/records" element={<Records />} />
-        <Route path="/branches" element={<Placeholder title="Branches" />} />
+        <Route path="/branches" element={<Branches />} />
         <Route
           path="/users"
           element={
             <ProtectedRoute adminOnly>
-              <Placeholder title="Users" note="Admin-only user management is coming in a later pass." />
+              <Users />
             </ProtectedRoute>
           }
         />
