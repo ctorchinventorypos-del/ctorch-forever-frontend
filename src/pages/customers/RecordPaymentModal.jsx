@@ -12,6 +12,7 @@ import { useCompany } from '../../context/CompanyContext';
 export default function RecordPaymentModal({ customer, onClose, onSaved }) {
   const { active } = useCompany();
   const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState('cash');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -25,7 +26,7 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
     try {
       const res = await api('/payments', {
         method: 'POST',
-        body: { customer_id: customer.id, amount: amt, note: note.trim() || null },
+        body: { customer_id: customer.id, amount: amt, payment_method: method, note: note.trim() || null },
       });
       setDone(res);
       onSaved(); // refresh the balance behind the modal
@@ -85,6 +86,14 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
         <label>Amount paid</label>
         <input className="input" type="number" value={amount} autoFocus
           onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+      </div>
+      <div className="field">
+        <label>Payment method</label>
+        <div className="seg">
+          {[['cash', 'Cash'], ['transfer', 'Transfer'], ['pos', 'POS card']].map(([k, lbl]) => (
+            <button key={k} className={method === k ? 'on' : ''} onClick={() => setMethod(k)}>{lbl}</button>
+          ))}
+        </div>
       </div>
       <div className="field">
         <label>Note (optional)</label>

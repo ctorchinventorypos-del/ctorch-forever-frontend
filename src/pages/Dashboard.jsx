@@ -11,7 +11,7 @@ import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { active, activeId } = useCompany();
   const navigate = useNavigate();
 
@@ -21,20 +21,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (!activeId) return;
     setLoading(true);
-    Promise.all([
-      api('/products'),
-      api('/customers'),
-      api('/sales'),
-    ])
-      .then(([products, customers, sales]) => {
-        const owed = customers.reduce((sum, c) => sum + Number(c.balance_owed || 0), 0);
-        setStats({
-          products: products.length,
-          customers: customers.length,
-          sales: sales.length,
-          owed,
-        });
-      })
+    api('/reports/dashboard')
+      .then(setStats)
       .catch(() => setStats(null))
       .finally(() => setLoading(false));
   }, [activeId]);
@@ -65,18 +53,43 @@ export default function Dashboard() {
         <>
           <div className="grid grid-3" style={{ marginBottom: 18 }}>
             <div className="card stat">
-              <div className="label">Products <Tooltip text="How many different products exist in this company's inventory." /></div>
-              <div className="value">{stats ? stats.products : '—'}</div>
+              <div className="label">Sales today <Tooltip text="Total value of sales recorded today, and how many." /></div>
+              <div className="value">{stats ? naira(stats.revenue_today) : '—'}</div>
+              {stats && <small className="subtle">{stats.sales_today} sale{stats.sales_today === 1 ? '' : 's'}</small>}
             </div>
             <div className="card stat">
-              <div className="label">Customers <Tooltip text="Credit customers and bulk resellers combined." /></div>
-              <div className="value">{stats ? stats.customers : '—'}</div>
+              <div className="label">Sales this month <Tooltip text="Total value of sales so far this calendar month." /></div>
+              <div className="value">{stats ? naira(stats.revenue_month) : '—'}</div>
+              {stats && <small className="subtle">{stats.sales_month} sale{stats.sales_month === 1 ? '' : 's'}</small>}
             </div>
             <div className="card stat">
               <div className="label">Total owed <Tooltip text="Money all customers and resellers currently owe this company." /></div>
               <div className="value" style={{ color: 'var(--amber)' }}>{stats ? naira(stats.owed) : '—'}</div>
+              {stats && <small className="subtle">{stats.debtors} debtor{stats.debtors === 1 ? '' : 's'}</small>}
             </div>
           </div>
+
+          {isAdmin && (
+            <div className="grid grid-3" style={{ marginBottom: 18 }}>
+              <div className="card stat">
+                <div className="label">Profit today <Tooltip text="Selling price minus cost on today's sales. Admins only." /></div>
+                <div className="value" style={{ color: 'var(--green-700)' }}>{stats && stats.profit_today != null ? naira(stats.profit_today) : '—'}</div>
+              </div>
+              <div className="card stat">
+                <div className="label">Profit this month <Tooltip text="Selling price minus cost on this month's sales. Admins only." /></div>
+                <div className="value" style={{ color: 'var(--green-700)' }}>{stats && stats.profit_month != null ? naira(stats.profit_month) : '—'}</div>
+              </div>
+              <button className="card stat" style={{ textAlign: 'left', cursor: 'pointer', border: 'none' }} onClick={() => navigate('/reports')}>
+                <div className="label">Low on stock <Tooltip text="Products at or below their low-stock level. Tap to open the inventory report." /></div>
+                <div className="value" style={{ color: stats && stats.low_stock ? 'var(--clay)' : 'inherit' }}>{stats ? stats.low_stock : '—'}</div>
+              </button>
+            </div>
+          )}
+          {!isAdmin && stats && stats.low_stock > 0 && (
+            <div className="banner-error" style={{ background: '#fbeee8', borderColor: '#f0d4c6', color: '#b9512f', marginBottom: 18 }}>
+              ⚠️ {stats.low_stock} product{stats.low_stock === 1 ? ' is' : 's are'} low on stock.
+            </div>
+          )}
 
           <h2 style={{ margin: '6px 0 12px' }}>Quick actions</h2>
           <div className="grid grid-2">

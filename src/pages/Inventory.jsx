@@ -24,6 +24,7 @@ export default function Inventory() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
 
   // which popup is open
   const [modal, setModal] = useState(null);       // 'add' | 'restock' | 'transfer' | 'categories'
@@ -33,11 +34,12 @@ export default function Inventory() {
 
   const load = useCallback(() => {
     setLoading(true);
-    Promise.all([api('/products'), api('/categories'), api('/branches')])
+    const plist = showInactive ? '/products?include_inactive=1' : '/products';
+    Promise.all([api(plist), api('/categories'), api('/branches')])
       .then(([p, c, b]) => { setProducts(p); setCategories(c); setBranches(b); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [showInactive]);
 
   useEffect(() => { if (activeId) load(); }, [activeId, load]);
 
@@ -82,6 +84,10 @@ export default function Inventory() {
             value={search} onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
+          Show deactivated
+        </label>
       </div>
 
       {loading ? (
@@ -113,8 +119,11 @@ export default function Inventory() {
                 </thead>
                 <tbody>
                   {groups[g].map((p) => (
-                    <tr key={p.id}>
-                      <td>{p.name}</td>
+                    <tr key={p.id} style={p.is_active === false ? { opacity: 0.55 } : null}>
+                      <td>
+                        {p.name}
+                        {p.is_active === false && <span className="tag tag-store" style={{ marginLeft: 8 }}>Deactivated</span>}
+                      </td>
                       <td><span className="code">{p.product_code}</span></td>
                       <td className="num">{naira(p.cost_price)}</td>
                       <td className="num">{naira(p.recommended_price)}</td>
@@ -122,6 +131,9 @@ export default function Inventory() {
                         <button className="stockbadge" onClick={() => setStockOf(p)} title="See where this stock is">
                           {p.total_stock} {p.unit}
                         </button>
+                        {p.reorder_level != null && p.total_stock <= p.reorder_level && (
+                          <span className="tag" style={{ marginLeft: 6, background: '#fbeee8', color: '#b9512f' }}>Low</span>
+                        )}
                       </td>
                       <td className="num">
                         <button className="linkbtn" onClick={() => setEditing(p)}>Edit</button>

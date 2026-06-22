@@ -9,7 +9,7 @@ import { api } from '../../api/client';
 export default function AddProductModal({ categories, branches, onClose, onSaved }) {
   const [form, setForm] = useState({
     product_code: '', name: '', category_id: '', unit: 'pcs',
-    cost_price: '', recommended_price: '',
+    cost_price: '', recommended_price: '', reorder_level: '5',
     initial_branch_id: '', initial_quantity: '',
   });
   const [error, setError] = useState('');
@@ -30,6 +30,7 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
           unit: form.unit || 'pcs',
           cost_price: Number(form.cost_price) || 0,
           recommended_price: Number(form.recommended_price) || 0,
+          reorder_level: form.reorder_level === '' ? 5 : Number(form.reorder_level) || 0,
           initial_branch_id: form.initial_branch_id || null,
           initial_quantity: Number(form.initial_quantity) || 0,
         },
@@ -91,6 +92,11 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
           <label>Selling price <Tooltip text="The recommended price to sell one unit. You can still sell at a different price on each sale." /></label>
           <input className="input" type="number" value={form.recommended_price} onChange={set('recommended_price')} placeholder="0" />
         </div>
+      </div>
+
+      <div className="field">
+        <label>Low-stock level <Tooltip text="When total stock falls to this number or below, the product is flagged as low on the dashboard and inventory report. Default is 5." /></label>
+        <input className="input" type="number" value={form.reorder_level} onChange={set('reorder_level')} placeholder="5" />
       </div>
 
       <div className="row2">

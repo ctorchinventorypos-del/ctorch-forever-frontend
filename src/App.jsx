@@ -11,6 +11,9 @@ import Inventory from './pages/Inventory';
 import Sales from './pages/Sales';
 import Customers from './pages/Customers';
 import Records from './pages/Records';
+import Reports from './pages/Reports';
+import Debtors from './pages/Debtors';
+import Quotations from './pages/Quotations';
 import Branches from './pages/Branches';
 import Users from './pages/Users';
 
@@ -29,8 +32,11 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/sales" element={<Sales />} />
+        <Route path="/quotations" element={<Quotations />} />
         <Route path="/customers" element={<Customers />} />
+        <Route path="/debtors" element={<Debtors />} />
         <Route path="/records" element={<Records />} />
+        <Route path="/reports" element={<Reports />} />
         <Route path="/branches" element={<Branches />} />
         <Route
           path="/users"

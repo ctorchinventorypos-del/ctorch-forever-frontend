@@ -9,8 +9,11 @@ const links = [
   { to: '/', label: 'Dashboard', ico: '🏠', end: true },
   { to: '/inventory', label: 'Inventory', ico: '📦' },
   { to: '/sales', label: 'Sales', ico: '🧾' },
+  { to: '/quotations', label: 'Quotations', ico: '📝' },
   { to: '/customers', label: 'Customers', ico: '👥' },
+  { to: '/debtors', label: 'Who owes me', ico: '💰' },
   { to: '/records', label: 'Records', ico: '🗂️' },
+  { to: '/reports', label: 'Reports', ico: '📊' },
   { to: '/branches', label: 'Branches', ico: '🏬' },
 ];
 

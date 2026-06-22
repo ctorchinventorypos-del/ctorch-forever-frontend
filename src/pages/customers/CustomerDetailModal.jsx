@@ -37,6 +37,7 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
             </div>
             <button className="btn btn-primary" onClick={() => setSub('payment')}>Record payment</button>
             <button className="btn btn-ghost" onClick={() => setSub('return')}>Record return</button>
+            <button className="btn btn-ghost" onClick={() => window.open(`/statement.html?id=${customerId}`, '_blank')}>📄 Statement</button>
           </div>
           {data.phone && <p className="subtle" style={{ margin: '4px 0 0' }}>📞 {data.phone}</p>}
 

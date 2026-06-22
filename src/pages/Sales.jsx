@@ -6,6 +6,7 @@
 //   4. Complete the sale, then print the invoice.
 // ============================================================
 import { useEffect, useState, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../api/client';
 import { useCompany } from '../context/CompanyContext';
 import { naira } from '../utils/format';
@@ -19,14 +20,22 @@ const TYPES = [
   { key: 'reseller', label: 'Reseller' },
 ];
 
+const PAY_METHODS = [
+  { key: 'cash', label: 'Cash' },
+  { key: 'transfer', label: 'Transfer' },
+  { key: 'pos', label: 'POS card' },
+];
+
 export default function Sales() {
   const { activeId, active } = useCompany();
+  const location = useLocation();
 
   const [loading, setLoading] = useState(true);
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
   const [branchId, setBranchId] = useState('');
   const [saleType, setSaleType] = useState('cash');
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState('');
   const [stockMap, setStockMap] = useState({});      // product_id -> qty at branch
@@ -37,6 +46,7 @@ export default function Sales() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
   const [addCust, setAddCust] = useState(false);
+  const [fromQuote, setFromQuote] = useState(null);  // quote number we converted, if any
 
   // Base data
   useEffect(() => {
@@ -67,6 +77,26 @@ export default function Sales() {
   }, [branchId, activeId]);
 
   const productById = useCallback((id) => products.find((p) => String(p.id) === String(id)), [products]);
+
+  // If we arrived here from "Convert to sale" on a quotation, prefill the cart.
+  useEffect(() => {
+    const q = location.state && location.state.quote;
+    if (!q || !products.length) return;
+    const lines = [];
+    (q.items || []).forEach((it) => {
+      if (!it.product_id) return; // ad-hoc lines without a real product can't be sold
+      const p = productById(it.product_id);
+      if (!p) return;
+      const qty = parseInt(it.quantity, 10) || 0;
+      const price = Number(it.unit_price) || 0;
+      if (qty > 0) lines.push({ product_id: p.id, name: p.name, unit: p.unit, quantity: qty, unit_price: price, subtotal: qty * price });
+    });
+    if (lines.length) setCart(lines);
+    setFromQuote(q.quote_number || null);
+    // clear the navigation state so a refresh doesn't re-add the items
+    window.history.replaceState({}, '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
 
   function pickProduct(id) {
     const p = productById(id);
@@ -105,13 +135,14 @@ export default function Sales() {
         body: {
           branch_id: branchId,
           sale_type: saleType,
+          payment_method: paymentMethod,
           customer_id: saleType === 'cash' ? null : customerId,
           amount_paid: saleType === 'cash' ? undefined : Number(amountPaid) || 0,
           items: cart.map((c) => ({ product_id: c.product_id, quantity: c.quantity, unit_price: c.unit_price })),
         },
       });
       setDone(res);
-      setCart([]); setCustomerId(''); setAmountPaid('');
+      setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setPaymentMethod('cash');
       // refresh availability after the sale
       if (branchId) api(`/stock?branch_id=${branchId}`).then((rows) => {
         const m = {}; rows.forEach((r) => { m[r.product_id] = r.quantity; }); setStockMap(m);
@@ -156,6 +187,11 @@ export default function Sales() {
       </div>
 
       {error && <div className="banner-error">{error}</div>}
+      {fromQuote && (
+        <div className="banner-error" style={{ background: '#e8f5ec', borderColor: '#bfe3cd', color: 'var(--green-800)' }}>
+          Converting quotation <b>{fromQuote}</b>. Choose the branch and sale type, then complete it.
+        </div>
+      )}
 
       <div className="card card-pad" style={{ marginBottom: 16 }}>
         <div className="row2">
@@ -253,6 +289,20 @@ export default function Sales() {
                 onChange={(e) => setAmountPaid(e.target.value)} placeholder="0" />
             </div>
           )}
+
+          <div className="field" style={{ marginTop: 14 }}>
+            <label>
+              Payment method
+              <Tooltip text="How the money came in. Recorded on the sale so you can reconcile cash, transfers and POS separately." />
+            </label>
+            <div className="seg">
+              {PAY_METHODS.map((m) => (
+                <button key={m.key} className={paymentMethod === m.key ? 'on' : ''} onClick={() => setPaymentMethod(m.key)}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <button className="btn btn-primary btn-block btn-lg" style={{ marginTop: 14 }} onClick={complete} disabled={busy}>
             {busy ? 'Recording…' : `Complete sale · ${naira(total)}`}
