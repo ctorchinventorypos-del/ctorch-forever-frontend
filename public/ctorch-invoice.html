@@ -3,90 +3,163 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sales Invoice</title>
+<title>CTORCH — Cash/Sales Invoice</title>
 <style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #f4f4f4; }
-  body { font-family: "Segoe UI", Tahoma, sans-serif; color: #111; }
-  .receipt {
-    width: 80mm; max-width: 320px; margin: 0 auto; background: #fff;
-    padding: 10px 12px 16px; font-size: 12px; line-height: 1.4;
+  :root{
+    --green:#1a8a4a; --green-dark:#0f6b38; --green-tint:#e8f5ec; --sun:#f5a623; --ink:#1a1a1a;
   }
-  .center { text-align: center; }
-  .co-name { font-size: 17px; font-weight: 800; letter-spacing: .5px; color: #1f7a44; }
-  .co-sub { font-size: 10.5px; color: #333; margin-top: 1px; }
-  .rule { border-top: 1px dashed #999; margin: 8px 0; }
-  .doc-title { text-align: center; font-weight: 700; font-size: 12.5px; letter-spacing: 1px; margin: 2px 0; }
-  .meta { font-size: 11px; }
-  .meta div { display: flex; justify-content: space-between; gap: 8px; }
-  .meta b { font-weight: 600; }
-  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-  th { font-size: 10px; text-transform: uppercase; letter-spacing: .3px; color: #555; text-align: left; border-bottom: 1px solid #333; padding: 2px 0; }
-  td { padding: 3px 0; vertical-align: top; font-size: 11.5px; }
-  .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .itemname { word-break: break-word; }
-  .totals { margin-top: 6px; border-top: 1px solid #333; padding-top: 6px; }
-  .totals div { display: flex; justify-content: space-between; }
-  .grand { font-size: 14px; font-weight: 800; }
-  .words { font-size: 10.5px; font-style: italic; color: #444; margin-top: 4px; }
-  .foot { text-align: center; font-size: 10px; color: #444; margin-top: 10px; }
-  .toolbar { text-align: center; margin: 14px auto; }
-  .toolbar label { font-size: 12px; margin-right: 12px; cursor: pointer; }
-  .btn { background: #1f7a44; color: #fff; border: 0; padding: 9px 18px; border-radius: 6px; font-size: 13px; cursor: pointer; }
-  @media print {
-    body { background: #fff; }
-    .receipt { width: 80mm; max-width: none; padding: 0 2mm; }
-    .noprint { display: none !important; }
-    @page { margin: 4mm; }
-  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:#f0f0f0; color:var(--ink); font-family:"Segoe UI", Arial, sans-serif;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .toolbar{ text-align:center; padding:14px; }
+  .toolbar button{ background:var(--green); color:#fff; border:none; border-radius:6px; padding:10px 22px; font-size:15px; cursor:pointer; }
+
+  .invoice{ width:820px; margin:0 auto 30px; background:#fff; border:6px solid var(--green); box-shadow:0 4px 18px rgba(0,0,0,.15); }
+  .frame{ border:1.5px solid var(--green); margin:4px; padding:12px 14px; }
+
+  /* Header */
+  .company{ text-align:center; font-weight:800; font-size:54px; letter-spacing:6px; line-height:1; font-family:Arial, sans-serif; }
+  .company .sun{ display:inline-block; vertical-align:middle; margin:0 2px; }
+  .company sup{ font-size:18px; }
+  .tagline{ text-align:center; font-style:italic; font-weight:800; font-size:19px; margin-top:6px; }
+  .tagline .since{ font-style:normal; font-weight:700; font-size:14px; margin-left:8px; }
+
+  /* Contact */
+  .contact{ display:flex; border:1.5px solid var(--green); margin-top:10px; }
+  .contact > div{ flex:1; padding:7px 10px; font-size:12.5px; }
+  .contact > div:first-child{ border-right:1.5px solid var(--green); }
+  .contact b{ color:var(--green); }
+
+  /* Meta */
+  .meta{ display:flex; gap:14px; margin-top:10px; }
+  .meta .to{ flex:1; padding-top:6px; font-weight:700; }
+  .meta .to .line{ border-bottom:1px solid #333; height:18px; margin:8px 0; }
+  .meta .right{ flex:0 0 360px; }
+  .cashbanner{ background:var(--green); color:#fff; font-weight:800; font-size:20px; text-align:center; padding:6px 0; letter-spacing:1px; }
+  .numbox{ display:flex; border:1.5px solid #333; border-top:none; }
+  .numbox .lbl{ flex:1; padding:8px; font-weight:800; font-size:13px; display:flex; align-items:flex-end; border-right:1.5px solid #333; }
+  .numbox .dmy{ display:flex; }
+  .numbox .dmy .cell{ width:62px; border-right:1.5px solid #333; }
+  .numbox .dmy .cell:last-child{ border-right:none; }
+  .numbox .dmy .cell .h{ text-align:center; font-size:11px; font-weight:800; border-bottom:1.5px solid #333; padding:3px 0; }
+  .numbox .dmy .cell .v{ text-align:center; font-size:14px; padding:6px 0; font-weight:700; }
+
+  /* Table */
+  table.goods{ width:100%; border-collapse:collapse; margin-top:12px; }
+  table.goods th, table.goods td{ border:1px solid var(--green); font-size:13px; padding:4px 8px; }
+  table.goods thead th{ background:#fff; color:var(--ink); font-weight:800; text-align:center; }
+  .col-no{ width:34px; background:var(--green); color:#fff; text-align:center; font-weight:800; }
+  .col-qty{ width:56px; text-align:center; }
+  .col-price{ width:96px; text-align:right; }
+  .col-amt{ width:120px; text-align:right; background:var(--green-tint); }
+  table.goods td{ height:25px; }
+  thead .col-no{ background:var(--green); }
+
+  /* Footer */
+  .foot{ display:flex; margin-top:10px; gap:14px; align-items:flex-start; }
+  .foot .notice{ flex:1; font-size:12.5px; font-weight:700; }
+  .foot .original{ color:var(--green); font-weight:800; font-size:16px; align-self:center; }
+  .foot .total{ flex:0 0 250px; display:flex; align-items:stretch; }
+  .foot .total .t-lbl{ color:var(--green); font-weight:800; font-size:22px; padding:6px 10px; display:flex; align-items:center; }
+  .foot .total .t-val{ flex:1; border:2px solid var(--green); text-align:right; font-weight:800; font-size:18px; padding:6px 10px; display:flex; align-items:center; justify-content:flex-end; }
+  .words{ margin-top:10px; font-size:13px; font-weight:700; }
+  .words .line{ display:inline-block; border-bottom:1px solid #333; min-width:540px; }
+  .nk{ margin-top:8px; font-size:13px; font-style:italic; }
+  .nk .line{ display:inline-block; border-bottom:1px solid #333; width:150px; }
+  .signrow{ display:flex; margin-top:18px; font-weight:700; font-size:13px; }
+  .signrow .cust{ flex:1; }
+  .signrow .cust .line{ display:inline-block; border-bottom:1px solid #333; width:170px; margin-left:6px; }
+  .signrow .for{ flex:1; text-align:right; }
+  .signrow .for .line{ display:inline-block; border-bottom:1px solid #333; width:170px; margin-left:6px; }
+
+  @media print{ body{ background:#fff; } .toolbar{ display:none; } .invoice{ box-shadow:none; border-width:4px; zoom:0.62; } @page{ size:A5 portrait; margin:6mm; } }
 </style>
 </head>
 <body>
-  <div class="receipt" id="receipt">
-    <div class="center">
-      <div class="co-name" id="co-name">…</div>
-      <div class="co-sub" id="co-addr"></div>
-      <div class="co-sub" id="co-phone"></div>
-    </div>
-    <div class="rule"></div>
-    <div class="doc-title" id="doc-title">SALES INVOICE</div>
-    <div class="meta">
-      <div><b>Invoice:</b> <span id="inv-no"></span></div>
-      <div><b>Date:</b> <span id="date"></span></div>
-      <div><b>Served by:</b> <span id="sold-by"></span></div>
-      <div id="cust-row"><b>Customer:</b> <span id="cust-name"></span></div>
-    </div>
-    <div class="rule"></div>
-    <table>
-      <thead>
-        <tr><th style="width:26px">Qty</th><th>Item</th><th class="num" id="th-price">Price</th><th class="num">Amount</th></tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <div class="totals">
-      <div class="grand"><span>TOTAL</span><span id="grand-total"></span></div>
-      <div id="paid-row" style="display:none;font-size:11px"><span>Paid</span><span id="paid-amt"></span></div>
-      <div id="bal-row" style="display:none;font-size:11px;font-weight:700"><span>Balance</span><span id="bal-amt"></span></div>
-    </div>
-    <div class="words" id="amount-words"></div>
-    <div class="rule"></div>
-    <div class="foot">
-      Goods sold in good condition are not returnable.<br>
-      No refund of money after payment.<br>
-      <b>Thank you for your patronage!</b>
-    </div>
+  <div class="toolbar">
+    <label style="margin-right:14px;font-size:14px;cursor:pointer"><input type="checkbox" id="togglePrice" checked /> Show unit price</label>
+    <button onclick="window.print()">Print this invoice</button>
   </div>
 
-  <div class="toolbar noprint">
-    <label><input type="checkbox" id="togglePrice" checked /> Show unit price</label>
-    <button class="btn" onclick="window.print()">🖨️ Print</button>
+  <div class="invoice">
+    <div class="frame">
+
+      <div class="company">CT<span class="sun"><svg width="44" height="44" viewBox="0 0 44 44"><g stroke="#f5a623" stroke-width="3" stroke-linecap="round"><line x1="22" y1="3" x2="22" y2="11"/><line x1="22" y1="33" x2="22" y2="41"/><line x1="3" y1="22" x2="11" y2="22"/><line x1="33" y1="22" x2="41" y2="22"/><line x1="8.5" y1="8.5" x2="14" y2="14"/><line x1="30" y1="30" x2="35.5" y2="35.5"/><line x1="35.5" y1="8.5" x2="30" y2="14"/><line x1="14" y1="30" x2="8.5" y2="35.5"/></g><circle cx="22" cy="22" r="8" fill="none" stroke="#111" stroke-width="3"/></svg></span>RCH<sup>&reg;</sup></div>
+      <div class="tagline">&mdash; Light Up Your World &mdash; <span class="since">Since 1999</span></div>
+
+      <div class="contact">
+        <div>
+          <b>HEAD OFFICE:</b><br>
+          1, CTORCH PLAZA,<br>
+          Alaba Int'l Market, Ojo - Lagos
+        </div>
+        <div>
+          <b>TELEPHONE:</b><br>
+          07034626998, 09028137442<br>
+          <b>Email:</b> ctorchnigeria@gmail.com
+        </div>
+      </div>
+
+      <div class="meta">
+        <div class="to">
+          <div>To M <span id="cust-name"></span></div>
+          <div class="line"></div>
+          <div class="line"></div>
+          <div style="font-size:12px;margin-top:4px">Served by: <b id="sold-by"></b></div>
+        </div>
+        <div class="right">
+          <div class="cashbanner">CASH / SALES INVOICE</div>
+          <div class="numbox">
+            <div class="lbl">INVOICE NUMBER:<br><span id="inv-no" style="font-weight:700"></span></div>
+            <div class="dmy">
+              <div class="cell"><div class="h">DAY</div><div class="v" id="d-day"></div></div>
+              <div class="cell"><div class="h">MONTH</div><div class="v" id="d-mon"></div></div>
+              <div class="cell"><div class="h">YEAR</div><div class="v" id="d-yr"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <table class="goods">
+        <thead>
+          <tr>
+            <th class="col-no">&#9737;</th>
+            <th class="col-qty">Qty.</th>
+            <th>Description of Goods</th>
+            <th class="col-price">Unit Price</th>
+            <th class="col-amt">Amount</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+
+      <div class="foot">
+        <div class="notice">Goods sold in good condition are not returnable<br>No refund of money after payment</div>
+        <div class="original">ORIGINAL COPY</div>
+        <div class="total">
+          <div class="t-lbl">TOTAL&nbsp;&#8358;</div>
+          <div class="t-val" id="grand-total"></div>
+        </div>
+      </div>
+
+      <div class="words">Amount in words <span class="line" id="amount-words"></span></div>
+      <div id="credit-summary" style="margin-top:8px;font-weight:700;font-size:14px;display:flex;gap:26px;flex-wrap:wrap;color:var(--green-dark)"></div>
+      <div class="nk"><span class="line"></span> Naira <span class="line"></span> Kobo</div>
+
+      <div class="signrow">
+        <div class="cust">CUSTOMER'S SIGN <span class="line"></span></div>
+        <div class="for">FOR: CTORCH <span class="line"></span></div>
+      </div>
+
+    </div>
   </div>
 
 <script>
   let sale = { invoice_number:"", created_at:new Date().toISOString(), customer_name:"", items:[], sold_by:"" };
   let showPrice = true;
-  const naira = (n) => "\u20a6" + Number(n||0).toLocaleString("en-NG", { minimumFractionDigits: 2 });
+  const MIN_ROWS = 12;
   function esc(t){ return String(t==null?"":t).replace(/[&<>"\x27]/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[ch]; }); }
+  const naira = (n) => Number(n).toLocaleString("en-NG", { minimumFractionDigits: 2 });
 
   function nairaInWords(amount){
     const a = Math.floor(amount);
@@ -103,64 +176,74 @@
   }
 
   function render(){
-    document.getElementById("co-name").textContent = sale.company_name || "SALES INVOICE";
-    document.getElementById("co-addr").textContent = sale.company_address || "";
-    document.getElementById("co-phone").textContent = sale.company_phone ? ("Tel: " + sale.company_phone) : "";
-    const type = (sale.sale_type || "").toUpperCase();
-    document.getElementById("doc-title").textContent = (type ? type + " " : "") + "SALES INVOICE";
-    document.getElementById("inv-no").textContent = sale.invoice_number || "";
-    document.getElementById("date").textContent = new Date(sale.created_at).toLocaleString("en-NG", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+    document.getElementById("cust-name").textContent = sale.customer_name || "";
     document.getElementById("sold-by").textContent = sale.sold_by || "";
-    if (sale.customer_name) { document.getElementById("cust-name").textContent = sale.customer_name; }
-    else { document.getElementById("cust-row").style.display = "none"; }
-    document.getElementById("th-price").textContent = showPrice ? "Price" : "Price";
+    document.getElementById("inv-no").textContent = sale.invoice_number || "";
+    const d = new Date(sale.created_at);
+    document.getElementById("d-day").textContent = String(d.getDate()).padStart(2,"0");
+    document.getElementById("d-mon").textContent = String(d.getMonth()+1).padStart(2,"0");
+    document.getElementById("d-yr").textContent = d.getFullYear();
 
     const tbody = document.getElementById("rows"); tbody.innerHTML = "";
     let total = 0;
-    (sale.items || []).forEach(function(item){
-      const amount = item.quantity * item.unit_price; total += amount;
+    const rowCount = Math.max(sale.items.length, MIN_ROWS);
+    for(let i=0;i<rowCount;i++){
+      const item = sale.items[i];
       const tr = document.createElement("tr");
-      tr.innerHTML =
-        '<td class="num">'+item.quantity+'</td>'+
-        '<td class="itemname">'+esc(item.name)+'</td>'+
-        '<td class="num">'+(showPrice ? naira(item.unit_price) : "-")+'</td>'+
-        '<td class="num">'+naira(amount)+'</td>';
+      if(item){
+        const amount = item.quantity * item.unit_price; total += amount;
+        tr.innerHTML =
+          '<td class="col-no">'+(i+1)+'.</td>'+
+          '<td class="col-qty">'+item.quantity+'</td>'+
+          '<td>'+esc(item.name)+'</td>'+
+          '<td class="col-price">'+(showPrice?naira(item.unit_price):"-")+'</td>'+
+          '<td class="col-amt">'+naira(amount)+'</td>';
+      } else {
+        tr.innerHTML = '<td class="col-no">'+(i+1)+'.</td><td class="col-qty"></td><td></td><td class="col-price"></td><td class="col-amt"></td>';
+      }
       tbody.appendChild(tr);
-    });
+    }
     document.getElementById("grand-total").textContent = naira(total);
     document.getElementById("amount-words").textContent = nairaInWords(total);
-
-    // Credit / reseller: show paid + balance.
-    if (sale.sale_type === "credit" || sale.sale_type === "reseller") {
-      const paid = Number(sale.amount_paid) || 0;
-      const bal = total - paid;
-      document.getElementById("paid-row").style.display = "flex";
-      document.getElementById("bal-row").style.display = "flex";
-      document.getElementById("paid-amt").textContent = naira(paid);
-      document.getElementById("bal-amt").textContent = naira(bal);
-    }
   }
 
-  document.getElementById("togglePrice").addEventListener("change", function(e){
-    showPrice = e.target.checked; render();
-  });
-
+  // ===== Live data: fetch this sale and print =====
   const params = new URLSearchParams(location.search);
   const saleId = params.get("id");
   const apiBase = localStorage.getItem("apiBase");
   const token = localStorage.getItem("token");
   const companyId = localStorage.getItem("companyId");
 
-  (async function(){
-    if(!saleId || !apiBase){ document.getElementById("receipt").innerHTML = '<p style="padding:16px;font-size:13px">Open this from the Sales or Records screen.</p>'; return; }
+  async function loadAndRender(){
+    if(!saleId || !apiBase){ document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">Missing invoice id. Open this from the Sales or Records screen.</p>'; return; }
     try{
       const res = await fetch(apiBase + "/sales/" + saleId, { headers: { "Authorization": "Bearer " + token, "X-Company-Id": companyId } });
-      if(!res.ok) throw new Error("Could not load this sale.");
-      sale = await res.json();
+      if(!res.ok) throw new Error("Could not load this invoice.");
+      const data = await res.json();
+      sale = {
+        invoice_number: data.invoice_number,
+        created_at: data.created_at,
+        customer_name: data.customer_name || "",
+        sold_by: data.sold_by || "",
+        sale_type: data.sale_type,
+        amount_paid: Number(data.amount_paid || 0),
+        items: (data.items || []).map(function(it){ return { name: it.name, quantity: it.quantity, unit_price: Number(it.unit_price) }; })
+      };
       render();
-      setTimeout(function(){ window.print(); }, 400);
-    }catch(e){ document.getElementById("receipt").innerHTML = '<p style="padding:16px;font-size:13px">' + e.message + '</p>'; }
-  })();
+      var cs = document.getElementById("credit-summary");
+      if(cs && sale.sale_type && sale.sale_type !== "cash"){
+        var tot = (sale.items||[]).reduce(function(s,it){ return s + it.quantity*it.unit_price; }, 0);
+        var paid = Number(sale.amount_paid||0);
+        var bal = Math.max(tot - paid, 0);
+        var f = function(x){ return "\u20a6" + Number(x).toLocaleString("en-NG"); };
+        cs.innerHTML = '<span>Paid: ' + f(paid) + '</span><span>Balance unpaid: ' + f(bal) + '</span>';
+      }
+      setTimeout(function(){ window.print(); }, 450);
+    }catch(e){ document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">' + e.message + '</p>'; }
+  }
+  var _tp = document.getElementById("togglePrice");
+  if(_tp){ _tp.addEventListener("change", function(e){ showPrice = e.target.checked; render(); }); }
+  loadAndRender();
 </script>
 </body>
 </html>

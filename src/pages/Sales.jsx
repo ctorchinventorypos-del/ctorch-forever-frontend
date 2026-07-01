@@ -5,7 +5,7 @@
 //   3. Add items — price defaults to the selling price but you can change it.
 //   4. Complete the sale, then print the invoice.
 // ============================================================
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api } from '../api/client';
 import { useCompany } from '../context/CompanyContext';
@@ -28,9 +28,15 @@ const PAY_METHODS = [
   { key: 'cheque', label: 'Cheque' },
 ];
 
+function newKey() {
+  try { return crypto.randomUUID(); }
+  catch (e) { return 'k-' + Date.now() + '-' + Math.random().toString(16).slice(2); }
+}
+
 export default function Sales() {
   const { activeId, active } = useCompany();
   const location = useLocation();
+  const saleKeyRef = useRef(newKey());
 
   const [loading, setLoading] = useState(true);
   const [branches, setBranches] = useState([]);
@@ -137,6 +143,7 @@ export default function Sales() {
     try {
       const res = await api('/sales', {
         method: 'POST',
+        headers: { 'Idempotency-Key': saleKeyRef.current },
         body: {
           branch_id: branchId,
           sale_type: saleType,
@@ -147,6 +154,7 @@ export default function Sales() {
         },
       });
       setDone(res);
+      saleKeyRef.current = newKey(); // next sale = new action
       setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setPaymentMethod('cash');
       // refresh availability after the sale
       if (branchId) api(`/stock?branch_id=${branchId}`).then((rows) => {

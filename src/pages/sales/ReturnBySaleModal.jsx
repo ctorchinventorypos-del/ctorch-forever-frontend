@@ -3,12 +3,18 @@
 //  Look the sale up, choose how many of each item to return, and submit.
 //  Stock goes back; for credit/reseller sales the customer's balance drops.
 // ============================================================
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Modal from '../../components/Modal';
 import { api } from '../../api/client';
 import { naira } from '../../utils/format';
 
+function newKey() {
+  try { return crypto.randomUUID(); }
+  catch (e) { return 'k-' + Date.now() + '-' + Math.random().toString(16).slice(2); }
+}
+
 export default function ReturnBySaleModal({ onClose, onSaved }) {
+  const keyRef = useRef(newKey());
   const [invoice, setInvoice] = useState('');
   const [sale, setSale] = useState(null);
   const [qtys, setQtys] = useState({});     // product_id -> qty to return
@@ -46,6 +52,7 @@ export default function ReturnBySaleModal({ onClose, onSaved }) {
       for (const it of toReturn) {
         const res = await api('/returns', {
           method: 'POST',
+          headers: { 'Idempotency-Key': `${keyRef.current}-${sale.id}-${it.product_id}` },
           body: { sale_id: sale.id, product_id: it.product_id, quantity: it.ret },
         });
         refund += Number(res.refund_amount) || 0;

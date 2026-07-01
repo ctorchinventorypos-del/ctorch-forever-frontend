@@ -11,7 +11,7 @@ try { localStorage.setItem('apiBase', BASE); } catch (e) {}
 const getToken = () => localStorage.getItem('token');
 const getCompanyId = () => localStorage.getItem('companyId');
 
-export async function api(path, { method = 'GET', body, company = true } = {}) {
+export async function api(path, { method = 'GET', body, company = true, headers: extraHeaders } = {}) {
   const headers = { 'Content-Type': 'application/json' };
 
   const token = getToken();
@@ -22,6 +22,9 @@ export async function api(path, { method = 'GET', body, company = true } = {}) {
     const cid = getCompanyId();
     if (cid) headers['X-Company-Id'] = cid;
   }
+
+  // Optional extra headers (e.g. an Idempotency-Key for safe retries).
+  if (extraHeaders) Object.assign(headers, extraHeaders);
 
   const res = await fetch(`${BASE}${path}`, {
     method,
