@@ -9,8 +9,10 @@ import { api } from '../../api/client';
 import { naira } from '../../utils/format';
 import RecordPaymentModal from './RecordPaymentModal';
 import RecordReturnModal from './RecordReturnModal';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CustomerDetailModal({ customerId, onClose, onChanged }) {
+  const { isAdmin } = useAuth();
   const [data, setData] = useState(null);
   const [sub, setSub] = useState(null); // 'payment' | 'return'
 
@@ -21,6 +23,24 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
   useEffect(() => { load(); }, [load]);
 
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  async function editBalance() {
+    const current = Number(data.balance_owed);
+    const input = window.prompt(
+      `Set the amount ${data.name} owes.\n\nThis directly overwrites the balance (admin action, recorded in the audit log). Current: ${current}`,
+      String(current)
+    );
+    if (input === null) return;
+    const val = Number(input);
+    if (isNaN(val) || val < 0) { window.alert('Enter a valid amount (0 or more).'); return; }
+    try {
+      await api(`/customers/${customerId}/balance`, { method: 'PATCH', body: { balance_owed: val } });
+      load();
+      if (onChanged) onChanged();
+    } catch (err) {
+      window.alert(err.message);
+    }
+  }
 
   return (
     <Modal title={data ? data.name : 'Customer'} wide onClose={onClose}>
@@ -38,6 +58,7 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
             <button className="btn btn-primary" onClick={() => setSub('payment')}>Record payment</button>
             <button className="btn btn-ghost" onClick={() => setSub('return')}>Record return</button>
             <button className="btn btn-ghost" onClick={() => window.open(`/statement.html?id=${customerId}`, '_blank')}>📄 Statement</button>
+            {isAdmin && <button className="btn btn-ghost" onClick={editBalance}>✏️ Edit balance</button>}
           </div>
           {data.phone && <p className="subtle" style={{ margin: '4px 0 0' }}>📞 {data.phone}</p>}
 
@@ -61,7 +82,7 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
           ) : (
             data.payments.map((p) => (
               <div className="list-line" key={p.id}>
-                <span className="grow">{fmtDate(p.created_at)}{p.note ? ` · ${p.note}` : ''}</span>
+                <span className="grow">{fmtDate(p.created_at)}{p.payment_method ? ` · ${p.payment_method}` : ''}{p.note ? ` · ${p.note}` : ''}</span>
                 <b style={{ color: 'var(--green-700)' }}>{naira(p.amount)}</b>
               </div>
             ))

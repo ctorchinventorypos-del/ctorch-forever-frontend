@@ -1,8 +1,9 @@
 // ============================================================
-//  Build a quotation (proforma). Pick products and quantities at the
-//  prices you'd offer. Saving does NOT touch stock — it's just a price
-//  offer. When the customer agrees, "Convert to sale" loads these items
-//  into the Sales screen to finish as a real sale.
+//  Build or revise a quotation (proforma).
+//  - New quote:    create a fresh price offer.
+//  - Revise quote: (admin) load an existing quote's items, change them,
+//    and save as a NEW revision. The old version is kept in history.
+//  Saving never touches stock — it's just a price offer.
 // ============================================================
 import { useEffect, useState } from 'react';
 import Modal from '../../components/Modal';
@@ -10,7 +11,8 @@ import Tooltip from '../../components/Tooltip';
 import { api } from '../../api/client';
 import { naira } from '../../utils/format';
 
-export default function QuoteModal({ onClose, onSaved }) {
+export default function QuoteModal({ onClose, onSaved, reviseOf }) {
+  const isRevise = !!reviseOf;
   const [products, setProducts] = useState([]);
   const [customerName, setCustomerName] = useState('');
   const [note, setNote] = useState('');
@@ -18,8 +20,28 @@ export default function QuoteModal({ onClose, onSaved }) {
   const [pick, setPick] = useState({ product_id: '', quantity: '', unit_price: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [ready, setReady] = useState(!isRevise);
 
   useEffect(() => { api('/products').then(setProducts).catch(() => {}); }, []);
+
+  // When revising, load the current quote and prefill the form.
+  useEffect(() => {
+    if (!isRevise) return;
+    api(`/quotations/${reviseOf.id}`)
+      .then((q) => {
+        setCustomerName(q.customer_name || '');
+        setNote(q.note || '');
+        setLines((q.items || []).map((it) => ({
+          product_id: it.product_id || null,
+          name: it.name,
+          quantity: Number(it.quantity),
+          unit_price: Number(it.unit_price),
+          subtotal: Number(it.quantity) * Number(it.unit_price),
+        })));
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setReady(true));
+  }, [isRevise, reviseOf]);
 
   const productById = (id) => products.find((p) => String(p.id) === String(id));
 
@@ -47,15 +69,17 @@ export default function QuoteModal({ onClose, onSaved }) {
     setError('');
     if (lines.length === 0) return setError('Add at least one item.');
     setBusy(true);
+    const body = {
+      customer_name: customerName.trim() || null,
+      note: note.trim() || null,
+      items: lines.map((l) => ({ product_id: l.product_id, name: l.name, quantity: l.quantity, unit_price: l.unit_price })),
+    };
     try {
-      await api('/quotations', {
-        method: 'POST',
-        body: {
-          customer_name: customerName.trim() || null,
-          note: note.trim() || null,
-          items: lines.map((l) => ({ product_id: l.product_id, name: l.name, quantity: l.quantity, unit_price: l.unit_price })),
-        },
-      });
+      if (isRevise) {
+        await api(`/quotations/${reviseOf.id}/revise`, { method: 'POST', body });
+      } else {
+        await api('/quotations', { method: 'POST', body });
+      }
       onSaved();
       onClose();
     } catch (err) {
@@ -67,64 +91,77 @@ export default function QuoteModal({ onClose, onSaved }) {
 
   return (
     <Modal
-      title="New quotation"
+      title={isRevise ? `Revise quotation ${reviseOf.quote_number}` : 'New quotation'}
       wide
       onClose={onClose}
       footer={
         <>
           <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={save} disabled={busy}>{busy ? 'Saving…' : 'Save quotation'}</button>
+          <button className="btn btn-primary" onClick={save} disabled={busy || !ready}>
+            {busy ? 'Saving…' : isRevise ? 'Save as new revision' : 'Save quotation'}
+          </button>
         </>
       }
     >
       {error && <div className="banner-error">{error}</div>}
-
-      <div className="field">
-        <label>Quote for <Tooltip text="The customer or contractor this quote is for. Free text — they don't need to be a registered customer." /></label>
-        <input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Bright Electricals / walk-in" />
-      </div>
-
-      <div className="row2">
-        <div className="field">
-          <label>Product</label>
-          <select className="input" value={pick.product_id} onChange={(e) => choose(e.target.value)}>
-            <option value="">— choose —</option>
-            {products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.product_code})</option>)}
-          </select>
-        </div>
-        <div className="row2">
-          <div className="field">
-            <label>Quantity</label>
-            <input className="input" type="number" value={pick.quantity} onChange={(e) => setPick({ ...pick, quantity: e.target.value })} />
-          </div>
-          <div className="field">
-            <label>Price each</label>
-            <input className="input" type="number" value={pick.unit_price} onChange={(e) => setPick({ ...pick, unit_price: e.target.value })} />
-          </div>
-        </div>
-      </div>
-      <button className="btn btn-ghost" onClick={addLine}>+ Add item</button>
-
-      {lines.length > 0 && (
-        <div style={{ marginTop: 14 }}>
-          {lines.map((l, i) => (
-            <div className="cart-line" key={i}>
-              <div className="g">
-                <div>{l.name}</div>
-                <div className="qty">{l.quantity} × {naira(l.unit_price)}</div>
-              </div>
-              <b>{naira(l.subtotal)}</b>
-              <button className="linkbtn" style={{ color: 'var(--clay)' }} onClick={() => removeLine(i)}>Remove</button>
-            </div>
-          ))}
-          <div className="totalbar"><span>Total</span><span>{naira(total)}</span></div>
+      {isRevise && (
+        <div className="banner-error" style={{ background: '#e8f5ec', borderColor: '#bfe3cd', color: 'var(--green-800)' }}>
+          Saving creates a new revision. The current version is kept in this quote's history.
         </div>
       )}
 
-      <div className="field" style={{ marginTop: 14 }}>
-        <label>Note (optional)</label>
-        <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. valid for 7 days" />
-      </div>
+      {!ready ? (
+        <p className="subtle">Loading quote…</p>
+      ) : (
+        <>
+          <div className="field">
+            <label>Quote for <Tooltip text="The customer or contractor this quote is for. Free text — they don't need to be a registered customer." /></label>
+            <input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Bright Electricals / walk-in" />
+          </div>
+
+          <div className="row2">
+            <div className="field">
+              <label>Product</label>
+              <select className="input" value={pick.product_id} onChange={(e) => choose(e.target.value)}>
+                <option value="">— choose —</option>
+                {products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.product_code})</option>)}
+              </select>
+            </div>
+            <div className="row2">
+              <div className="field">
+                <label>Quantity</label>
+                <input className="input" type="number" value={pick.quantity} onChange={(e) => setPick({ ...pick, quantity: e.target.value })} />
+              </div>
+              <div className="field">
+                <label>Price each</label>
+                <input className="input" type="number" value={pick.unit_price} onChange={(e) => setPick({ ...pick, unit_price: e.target.value })} />
+              </div>
+            </div>
+          </div>
+          <button className="btn btn-ghost" onClick={addLine}>+ Add item</button>
+
+          {lines.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              {lines.map((l, i) => (
+                <div className="cart-line" key={i}>
+                  <div className="g">
+                    <div>{l.name}</div>
+                    <div className="qty">{l.quantity} × {naira(l.unit_price)}</div>
+                  </div>
+                  <b>{naira(l.subtotal)}</b>
+                  <button className="linkbtn" style={{ color: 'var(--clay)' }} onClick={() => removeLine(i)}>Remove</button>
+                </div>
+              ))}
+              <div className="totalbar"><span>Total</span><span>{naira(total)}</span></div>
+            </div>
+          )}
+
+          <div className="field" style={{ marginTop: 14 }}>
+            <label>Note (optional)</label>
+            <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. valid for 7 days" />
+          </div>
+        </>
+      )}
     </Modal>
   );
 }

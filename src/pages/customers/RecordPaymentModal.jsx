@@ -22,8 +22,34 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
     setError('');
     const amt = Number(amount);
     if (!amt || amt <= 0) return setError('Enter an amount greater than 0.');
+
+    // Extra care for bulk resellers: confirm before recording.
+    if (customer.customer_type === 'reseller') {
+      const ok = window.confirm(
+        `This is a payment for a BULK RESELLER (${customer.name}).\n\n` +
+        `Amount: ${naira(amt)} (${method}).\n\nPlease confirm this is correct before recording.`
+      );
+      if (!ok) return;
+    }
+
     setBusy(true);
     try {
+      // Duplicate guard: warn if the same amount was already recorded today.
+      try {
+        const detail = await api(`/customers/${customer.id}`);
+        const today = new Date().toDateString();
+        const dup = (detail.payments || []).some(
+          (p) => Number(p.amount) === amt && new Date(p.created_at).toDateString() === today
+        );
+        if (dup) {
+          const ok = window.confirm(
+            `A payment of ${naira(amt)} was already recorded for ${customer.name} today.\n\n` +
+            `This may be a duplicate. Record it anyway?`
+          );
+          if (!ok) { setBusy(false); return; }
+        }
+      } catch (_) { /* if the check fails, don't block the payment */ }
+
       const res = await api('/payments', {
         method: 'POST',
         body: { customer_id: customer.id, amount: amt, payment_method: method, note: note.trim() || null },
@@ -90,7 +116,7 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
       <div className="field">
         <label>Payment method</label>
         <div className="seg">
-          {[['cash', 'Cash'], ['transfer', 'Transfer'], ['pos', 'POS card']].map(([k, lbl]) => (
+          {[['cash', 'Cash'], ['transfer', 'Transfer'], ['pos', 'POS card'], ['cheque', 'Cheque']].map(([k, lbl]) => (
             <button key={k} className={method === k ? 'on' : ''} onClick={() => setMethod(k)}>{lbl}</button>
           ))}
         </div>

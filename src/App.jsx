@@ -36,7 +36,7 @@ export default function App() {
         <Route path="/customers" element={<Customers />} />
         <Route path="/debtors" element={<Debtors />} />
         <Route path="/records" element={<Records />} />
-        <Route path="/reports" element={<Reports />} />
+        <Route path="/reports" element={<ProtectedRoute adminOnly><Reports /></ProtectedRoute>} />
         <Route path="/branches" element={<Branches />} />
         <Route
           path="/users"

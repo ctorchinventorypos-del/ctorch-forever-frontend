@@ -13,6 +13,7 @@ import { naira } from '../utils/format';
 import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
 import AddCustomerModal from './customers/AddCustomerModal';
+import ReturnBySaleModal from './sales/ReturnBySaleModal';
 
 const TYPES = [
   { key: 'cash', label: 'Cash' },
@@ -24,6 +25,7 @@ const PAY_METHODS = [
   { key: 'cash', label: 'Cash' },
   { key: 'transfer', label: 'Transfer' },
   { key: 'pos', label: 'POS card' },
+  { key: 'cheque', label: 'Cheque' },
 ];
 
 export default function Sales() {
@@ -46,6 +48,7 @@ export default function Sales() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
   const [addCust, setAddCust] = useState(false);
+  const [returning, setReturning] = useState(false);
   const [fromQuote, setFromQuote] = useState(null);  // quote number we converted, if any
 
   // Base data
@@ -67,14 +70,16 @@ export default function Sales() {
   }, [saleType, activeId]);
 
   // Stock available at the chosen branch
-  useEffect(() => {
+  const refreshStock = useCallback(() => {
     if (!branchId) { setStockMap({}); return; }
     api(`/stock?branch_id=${branchId}`).then((rows) => {
       const m = {};
       rows.forEach((r) => { m[r.product_id] = r.quantity; });
       setStockMap(m);
     }).catch(() => {});
-  }, [branchId, activeId]);
+  }, [branchId]);
+
+  useEffect(() => { refreshStock(); }, [refreshStock, activeId]);
 
   const productById = useCallback((id) => products.find((p) => String(p.id) === String(id)), [products]);
 
@@ -184,6 +189,8 @@ export default function Sales() {
       <div className="page-head">
         <h1>New sale</h1>
         <Tooltip text="Record a sale here. Cash is paid in full now; credit and reseller sales are owed by a customer until they pay." />
+        <div className="spacer" />
+        <button className="btn btn-ghost" onClick={() => setReturning(true)}>↩️ Return by invoice</button>
       </div>
 
       {error && <div className="banner-error">{error}</div>}
@@ -309,6 +316,8 @@ export default function Sales() {
           </button>
         </div>
       )}
+
+      {returning && <ReturnBySaleModal onClose={() => setReturning(false)} onSaved={refreshStock} />}
 
       {addCust && (
         <AddCustomerModal

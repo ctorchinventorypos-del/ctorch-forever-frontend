@@ -13,7 +13,7 @@ const links = [
   { to: '/customers', label: 'Customers', ico: '👥' },
   { to: '/debtors', label: 'Who owes me', ico: '💰' },
   { to: '/records', label: 'Records', ico: '🗂️' },
-  { to: '/reports', label: 'Reports', ico: '📊' },
+  { to: '/reports', label: 'Reports', ico: '📊', adminOnly: true },
   { to: '/branches', label: 'Branches', ico: '🏬' },
 ];
 
@@ -29,7 +29,7 @@ export default function Sidebar({ open, onNavigate }) {
         </div>
       </div>
 
-      {links.map((l) => (
+      {links.filter((l) => !l.adminOnly || isAdmin).map((l) => (
         <NavLink key={l.to} to={l.to} end={l.end} className="nav-link" onClick={onNavigate}>
           <span className="ico">{l.ico}</span>
           {l.label}

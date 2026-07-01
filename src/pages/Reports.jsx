@@ -22,12 +22,14 @@ export default function Reports() {
     { key: 'sales', label: 'Sales summary' },
     { key: 'branch', label: 'Branch performance' },
     { key: 'inventory', label: 'Inventory' },
+    { key: 'cash', label: 'Daily cash' },
   ].filter(Boolean);
 
   const [tab, setTab] = useState(TABS[0].key);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [group, setGroup] = useState('month');
+  const [cashDate, setCashDate] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -45,9 +47,10 @@ export default function Reports() {
     if (tab === 'profit') url = `/reports/profit?group=${group}${dateQS()}`;
     else if (tab === 'sales') url = `/reports/sales-summary?group=${group === 'year' ? 'month' : group}${dateQS()}`;
     else if (tab === 'branch') url = `/reports/branch-performance?x=1${dateQS()}`;
+    else if (tab === 'cash') url = `/reports/daily-cash?date=${cashDate}`;
     else url = '/reports/inventory';
     api(url).then(setData).catch(() => setData(null)).finally(() => setLoading(false));
-  }, [tab, group, dateQS]);
+  }, [tab, group, dateQS, cashDate]);
 
   useEffect(() => { if (activeId) load(); }, [activeId, load]);
 
@@ -82,6 +85,13 @@ export default function Reports() {
         </div>
       )}
 
+      {tab === 'cash' && (
+        <div className="toolbar-row" style={{ gap: 10, alignItems: 'center' }}>
+          <span className="subtle">Date</span>
+          <input className="input" style={{ maxWidth: 190 }} type="date" value={cashDate} onChange={(e) => setCashDate(e.target.value)} />
+        </div>
+      )}
+
       {loading ? <Spinner full /> : !data ? (
         <p className="subtle">No data.</p>
       ) : (
@@ -90,9 +100,60 @@ export default function Reports() {
           {tab === 'sales' && <SalesTable rows={data} />}
           {tab === 'branch' && <BranchTable rows={data} isAdmin={isAdmin} />}
           {tab === 'inventory' && <InventoryReport data={data} isAdmin={isAdmin} />}
+          {tab === 'cash' && <DailyCash data={data} />}
         </>
       )}
     </div>
+  );
+}
+
+function DailyCash({ data }) {
+  const m = data.methods;
+  const fmtT = (d) => new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+  return (
+    <>
+      <div className="grid grid-3" style={{ marginBottom: 14 }}>
+        <div className="card stat"><div className="label">Cash</div><div className="value">{naira(m.cash)}</div></div>
+        <div className="card stat"><div className="label">Transfer</div><div className="value">{naira(m.transfer)}</div></div>
+        <div className="card stat"><div className="label">POS card</div><div className="value">{naira(m.pos)}</div></div>
+      </div>
+      <div className="grid grid-3" style={{ marginBottom: 16 }}>
+        <div className="card stat"><div className="label">Cheque</div><div className="value">{naira(m.cheque)}</div></div>
+        <div className="card stat" style={{ gridColumn: 'span 2' }}>
+          <div className="label">Total received</div>
+          <div className="value" style={{ color: 'var(--green-700)' }}>{naira(data.total)}</div>
+          <small className="subtle">{data.count} payment{data.count === 1 ? '' : 's'} on {data.date}</small>
+        </div>
+      </div>
+
+      {data.list.length === 0 ? (
+        <p className="subtle">No payments received on this date.</p>
+      ) : (
+        <div className="table-wrap">
+          <table className="t">
+            <thead>
+              <tr><th>Time</th><th>Type</th><th>Reference</th><th>From</th><th>Method</th><th>Received by</th><th className="num">Amount</th></tr>
+            </thead>
+            <tbody>
+              {data.list.map((r, i) => (
+                <tr key={i}>
+                  <td className="subtle">{fmtT(r.created_at)}</td>
+                  <td>{r.kind}</td>
+                  <td>{r.ref !== '—' ? <span className="code">{r.ref}</span> : '—'}</td>
+                  <td>{r.customer_name || 'Walk-in'}</td>
+                  <td><span className="tag tag-store">{r.method}</span></td>
+                  <td className="subtle">{r.received_by}</td>
+                  <td className="num" style={{ fontWeight: 700 }}>{naira(r.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr><td colSpan="6" style={{ fontWeight: 700 }}>Total</td><td className="num" style={{ fontWeight: 800 }}>{naira(data.total)}</td></tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </>
   );
 }
 

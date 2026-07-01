@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Statement of Account</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #143; margin: 0; padding: 28px; }
+  .wrap { max-width: 800px; margin: 0 auto; }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1f7a44; padding-bottom: 12px; }
+  .co { font-size: 22px; font-weight: 800; color: #1f7a44; }
+  .co small { display: block; font-size: 12px; font-weight: 400; color: #555; margin-top: 2px; }
+  .title { text-align: right; }
+  .title h1 { font-size: 18px; margin: 0; color: #1f7a44; letter-spacing: .5px; }
+  .meta { margin: 14px 0 18px; font-size: 13.5px; }
+  .meta b { color: #143; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid #dce8df; text-align: left; }
+  th { background: #eaf5ee; color: #1f6b3e; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight: 800; border-top: 2px solid #1f7a44; }
+  .owed { color: #b9512f; }
+  .paid { color: #1f7a44; }
+  .hero { margin: 16px 0; padding: 12px 16px; background: #eaf5ee; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .hero .lbl { font-size: 12px; color: #557; text-transform: uppercase; }
+  .hero .amt { font-size: 24px; font-weight: 800; }
+  .foot { margin-top: 26px; font-size: 12px; color: #667; text-align: center; }
+  @media print { body { padding: 0; } .noprint { display: none; } }
+  .noprint { text-align: center; margin-top: 20px; }
+  .btn { background: #1f7a44; color: #fff; border: 0; padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="wrap" id="page">
+    <div class="top">
+      <div class="co" id="company">…<small id="company-sub"></small></div>
+      <div class="title"><h1>STATEMENT OF ACCOUNT</h1><div id="asof" style="font-size:12px;color:#557;margin-top:4px"></div></div>
+    </div>
+
+    <div class="meta">
+      <div><b id="cust">—</b> <span id="cust-phone" style="color:#667"></span></div>
+      <div id="cust-type" style="color:#667;font-size:12.5px;margin-top:2px"></div>
+    </div>
+
+    <div class="hero">
+      <span class="lbl">Current balance owed</span>
+      <span class="amt owed" id="balance">₦0</span>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Details</th><th class="num">Debit (owed)</th><th class="num">Credit (paid)</th><th class="num">Balance</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+      <tfoot>
+        <tr><td colspan="2">Closing balance</td><td class="num" id="t-debit"></td><td class="num" id="t-credit"></td><td class="num owed" id="t-balance"></td></tr>
+      </tfoot>
+    </table>
+
+    <div class="foot">This is a computer-generated statement and is valid without a signature.</div>
+    <div class="noprint"><button class="btn" onclick="window.print()">🖨️ Print statement</button></div>
+  </div>
+
+<script>
+  function esc(t){ return String(t==null?"":t).replace(/[&<>"\x27]/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[ch]; }); }
+  var money = function(n){ return "\u20a6" + Number(n||0).toLocaleString("en-NG", { minimumFractionDigits: 2 }); };
+  var fmtD = function(d){ return new Date(d).toLocaleDateString("en-NG", { day:"2-digit", month:"short", year:"numeric" }); };
+
+  var params = new URLSearchParams(location.search);
+  var id = params.get("id");
+  var apiBase = localStorage.getItem("apiBase");
+  var token = localStorage.getItem("token");
+  var companyId = localStorage.getItem("companyId");
+
+  (async function(){
+    if(!id || !apiBase){ document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">Missing customer id. Open this from the customer or debtors screen.</p>'; return; }
+    try{
+      var res = await fetch(apiBase + "/customers/" + id, { headers: { "Authorization": "Bearer " + token, "X-Company-Id": companyId } });
+      if(!res.ok) throw new Error("Could not load this statement.");
+      var d = await res.json();
+
+      document.getElementById("company").childNodes[0].nodeValue = d.company_name || "Statement";
+      document.getElementById("company-sub").textContent = [d.company_address, d.company_phone].filter(Boolean).join(" · ");
+      document.getElementById("asof").textContent = "As of " + fmtD(new Date());
+      document.getElementById("cust").textContent = d.name || "";
+      document.getElementById("cust-phone").textContent = d.phone ? ("· " + d.phone) : "";
+      document.getElementById("cust-type").textContent = d.customer_type === "reseller" ? "Bulk reseller account" : "Credit customer account";
+      document.getElementById("balance").textContent = money(d.balance_owed);
+
+      // Build chronological entries: a sale owes its total; money paid is a credit.
+      var entries = [];
+      (d.sales || []).forEach(function(s){
+        entries.push({ date: s.created_at, label: "Invoice " + s.invoice_number, debit: Number(s.total_amount), credit: 0 });
+        if(Number(s.amount_paid) > 0){
+          entries.push({ date: s.created_at, label: "Paid at sale" + (s.payment_method ? " ("+s.payment_method+")" : ""), debit: 0, credit: Number(s.amount_paid) });
+        }
+      });
+      (d.payments || []).forEach(function(p){
+        entries.push({ date: p.created_at, label: "Payment" + (p.payment_method ? " ("+p.payment_method+")" : ""), debit: 0, credit: Number(p.amount) });
+      });
+      entries.sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
+
+      // Reconcile: if the transactions don't add up to the current balance
+      // (e.g. an opening balance set at registration, or an admin adjustment),
+      // show the difference as an opening balance/adjustment line at the top.
+      var txnNet = entries.reduce(function(s,e){ return s + e.debit - e.credit; }, 0);
+      var opening = Number(d.balance_owed) - txnNet;
+      if (Math.abs(opening) > 0.005) {
+        entries.unshift({
+          date: (entries[0] ? entries[0].date : new Date()),
+          label: "Opening balance / adjustment",
+          debit: opening > 0 ? opening : 0,
+          credit: opening < 0 ? -opening : 0,
+        });
+      }
+
+      var tbody = document.getElementById("rows");
+      var running = 0, td = 0, tc = 0;
+      if(entries.length === 0){
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#667">No transactions yet.</td></tr>';
+      } else {
+        entries.forEach(function(e){
+          running += e.debit - e.credit;
+          td += e.debit; tc += e.credit;
+          var tr = document.createElement("tr");
+          tr.innerHTML =
+            '<td>'+fmtD(e.date)+'</td>'+
+            '<td>'+esc(e.label)+'</td>'+
+            '<td class="num">'+(e.debit ? money(e.debit) : "")+'</td>'+
+            '<td class="num paid">'+(e.credit ? money(e.credit) : "")+'</td>'+
+            '<td class="num">'+money(running)+'</td>';
+          tbody.appendChild(tr);
+        });
+      }
+      document.getElementById("t-debit").textContent = money(td);
+      document.getElementById("t-credit").textContent = money(tc);
+      document.getElementById("t-balance").textContent = money(d.balance_owed);
+
+      setTimeout(function(){ window.print(); }, 400);
+    }catch(e){ document.body.innerHTML = '<p style="padding:24px;font-family:sans-serif">' + e.message + '</p>'; }
+  })();
+</script>
+</body>
+</html>

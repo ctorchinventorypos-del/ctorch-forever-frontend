@@ -7,7 +7,7 @@ import Modal from '../../components/Modal';
 import { api } from '../../api/client';
 
 export default function AddCustomerModal({ type, onClose, onSaved }) {
-  const [form, setForm] = useState({ name: '', phone: '', address: '' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', opening_balance: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -25,6 +25,7 @@ export default function AddCustomerModal({ type, onClose, onSaved }) {
           name: form.name.trim(),
           phone: form.phone.trim() || null,
           address: form.address.trim() || null,
+          opening_balance: form.opening_balance === '' ? 0 : Number(form.opening_balance) || 0,
         },
       });
       onSaved(created);
@@ -61,6 +62,11 @@ export default function AddCustomerModal({ type, onClose, onSaved }) {
       <div className="field">
         <label>Address (optional)</label>
         <input className="input" value={form.address} onChange={set('address')} />
+      </div>
+      <div className="field">
+        <label>Amount already owed (optional)</label>
+        <input className="input" type="number" value={form.opening_balance} onChange={set('opening_balance')} placeholder="0" />
+        <small className="subtle">If this {label} already owes money, enter it here. Leave 0 if not.</small>
       </div>
     </Modal>
   );

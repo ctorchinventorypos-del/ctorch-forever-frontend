@@ -51,6 +51,7 @@ export default function Dashboard() {
         <Spinner full />
       ) : (
         <>
+          {isAdmin && (
           <div className="grid grid-3" style={{ marginBottom: 18 }}>
             <div className="card stat">
               <div className="label">Sales today <Tooltip text="Total value of sales recorded today, and how many." /></div>
@@ -68,6 +69,7 @@ export default function Dashboard() {
               {stats && <small className="subtle">{stats.debtors} debtor{stats.debtors === 1 ? '' : 's'}</small>}
             </div>
           </div>
+          )}
 
           {isAdmin && (
             <div className="grid grid-3" style={{ marginBottom: 18 }}>
