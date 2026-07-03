@@ -16,7 +16,7 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
     initial_branch_id: '',
   });
   const [hasVariations, setHasVariations] = useState(false);
-  const [variations, setVariations] = useState([{ label: '', product_code: '' }]);
+  const [variations, setVariations] = useState([{ label: '', product_code: '', cost_price: '', recommended_price: '' }]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -27,7 +27,7 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
     next[i] = { ...next[i], [k]: e.target.value };
     setVariations(next);
   };
-  const addVar = () => setVariations([...variations, { label: '', product_code: '' }]);
+  const addVar = () => setVariations([...variations, { label: '', product_code: '', cost_price: '', recommended_price: '' }]);
   const removeVar = (i) => setVariations(variations.filter((_, idx) => idx !== i));
 
   const baseShared = () => ({
@@ -62,6 +62,9 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
           .filter((v) => v.label.trim() || v.product_code.trim())
           .map((v) => ({
             ...baseShared(),
+            // Per-variation price overrides the base when filled in.
+            cost_price: v.cost_price !== '' ? Number(v.cost_price) || 0 : Number(form.cost_price) || 0,
+            recommended_price: v.recommended_price !== '' ? Number(v.recommended_price) || 0 : Number(form.recommended_price) || 0,
             product_code: v.product_code.trim(),
             name: `${form.name.trim()} ${v.label.trim()}`.trim(),
             initial_quantity: 0,
@@ -159,19 +162,31 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
         <div>
           <div className="sectionhead" style={{ marginTop: 4 }}>Variations</div>
           {variations.map((v, i) => (
-            <div className="row2" key={i} style={{ alignItems: 'end' }}>
-              <div className="field">
-                <label>Variation {i + 1} label</label>
-                <input className="input" value={v.label} onChange={setVar(i, 'label')} placeholder="e.g. Warm White" />
+            <div key={i} style={{ borderTop: i > 0 ? '1px solid var(--line)' : 'none', paddingTop: i > 0 ? 10 : 0 }}>
+              <div className="row2" style={{ alignItems: 'end' }}>
+                <div className="field">
+                  <label>Variation {i + 1} label</label>
+                  <input className="input" value={v.label} onChange={setVar(i, 'label')} placeholder="e.g. Warm White" />
+                </div>
+                <div className="field">
+                  <label>Code {variations.length > 1 && <button className="linkbtn" style={{ color: 'var(--clay)', float: 'right' }} onClick={() => removeVar(i)}>Remove</button>}</label>
+                  <input className="input" value={v.product_code} onChange={setVar(i, 'product_code')} placeholder="e.g. LED-001-WW" />
+                </div>
               </div>
-              <div className="field">
-                <label>Code {variations.length > 1 && <button className="linkbtn" style={{ color: 'var(--clay)', float: 'right' }} onClick={() => removeVar(i)}>Remove</button>}</label>
-                <input className="input" value={v.product_code} onChange={setVar(i, 'product_code')} placeholder="e.g. LED-001-WW" />
+              <div className="row2">
+                <div className="field">
+                  <label>Cost price <span className="subtle">(optional)</span></label>
+                  <input className="input" type="number" value={v.cost_price} onChange={setVar(i, 'cost_price')} placeholder={form.cost_price || '0'} />
+                </div>
+                <div className="field">
+                  <label>Selling price <span className="subtle">(optional)</span></label>
+                  <input className="input" type="number" value={v.recommended_price} onChange={setVar(i, 'recommended_price')} placeholder={form.recommended_price || '0'} />
+                </div>
               </div>
             </div>
           ))}
           <button className="btn btn-ghost" onClick={addVar}>+ Add variation</button>
-          <p className="subtle" style={{ marginTop: 6 }}>Each variation is saved as "{form.name || 'Product'} [label]" with its own code, starting at 0 in stock.</p>
+          <p className="subtle" style={{ marginTop: 6 }}>Each variation is saved as "{form.name || 'Product'} [label]" with its own code, starting at 0 in stock. Leave a variation's price blank to use the base price above.</p>
         </div>
       )}
     </Modal>
