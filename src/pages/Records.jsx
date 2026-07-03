@@ -17,6 +17,8 @@ const TYPES = [
   { key: 'credit_payments',  label: 'Credit payments',    path: '/payments?customer_type=credit', kind: 'payment' },
   { key: 'reseller_payments',label: 'Reseller payments',  path: '/payments?customer_type=reseller', kind: 'payment' },
   { key: 'returns',          label: 'Returns',            path: '/returns',                       kind: 'return' },
+  { key: 'stock_changes',    label: 'Stock changes',      path: '/stock/movements',               kind: 'stock' },
+  { key: 'products_added',   label: 'Products added',     path: '/products?include_inactive=1',   kind: 'product' },
 ];
 
 export default function Records() {
@@ -36,8 +38,21 @@ export default function Records() {
     if (from) parts.push(`from=${from}`);
     if (to) parts.push(`to=${to}`);
     const url = parts.length ? cfg.path + sep + parts.join('&') : cfg.path;
-    api(url).then(setRows).catch(() => setRows([])).finally(() => setLoading(false));
-  }, [cfg.path, from, to]);
+    api(url)
+      .then((data) => {
+        let out = data || [];
+        // Stock changes and product-creation lists aren't date-filtered by the
+        // server, so filter (and sort newest-first) here.
+        if (cfg.kind === 'stock' || cfg.kind === 'product') {
+          if (from) out = out.filter((r) => new Date(r.created_at) >= new Date(from));
+          if (to) out = out.filter((r) => new Date(r.created_at) < new Date(new Date(to).getTime() + 86400000));
+          out = [...out].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+        setRows(out);
+      })
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [cfg.path, cfg.kind, from, to]);
 
   useEffect(() => { if (activeId) load(); }, [activeId, load]);
 
@@ -148,14 +163,64 @@ export default function Records() {
               </>
             )}
 
+            {cfg.kind === 'stock' && (
+              <>
+                <thead>
+                  <tr><th>Date</th><th>Product</th><th>Change</th><th className="num">Qty</th><th>Location</th><th>By</th></tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => {
+                    const labels = { restock: 'Restock', transfer: 'Transfer', sale: 'Sale', adjustment: 'Stock edit', return: 'Return' };
+                    const where = r.movement_type === 'transfer' ? `${r.from_branch || '—'} → ${r.to_branch || '—'}` : (r.to_branch || r.from_branch || '—');
+                    return (
+                      <tr key={r.id}>
+                        <td>{fmtDate(r.created_at)}</td>
+                        <td>{r.product_name} <span className="subtle">({r.product_code})</span></td>
+                        <td><span className="tag tag-store">{labels[r.movement_type] || r.movement_type}</span></td>
+                        <td className="num" style={{ color: Number(r.quantity) < 0 ? 'var(--clay)' : 'inherit' }}>{Number(r.quantity) > 0 ? '+' : ''}{r.quantity}</td>
+                        <td className="subtle">{where}</td>
+                        <td className="subtle">{r.done_by || '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </>
+            )}
+
+            {cfg.kind === 'product' && (
+              <>
+                <thead>
+                  <tr><th>Date added</th><th>Product</th><th>Code</th><th>Category</th><th className="num">In stock</th><th>Added by</th></tr>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.id} style={r.is_active === false ? { opacity: 0.55 } : null}>
+                      <td>{fmtDate(r.created_at)}</td>
+                      <td>{r.name}{r.is_active === false && <span className="tag tag-store" style={{ marginLeft: 6 }}>Deactivated</span>}</td>
+                      <td><span className="code">{r.product_code}</span></td>
+                      <td className="subtle">{r.category_name || '—'}</td>
+                      <td className="num">{r.total_stock} {r.unit}</td>
+                      <td className="subtle">{r.created_by_name || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </>
+            )}
+
             <tfoot>
-              <tr>
-                <td colSpan={cfg.kind === 'sale' ? 4 : cfg.kind === 'return' ? 4 : 3} style={{ fontWeight: 700 }}>
-                  {rows.length} record{rows.length === 1 ? '' : 's'}
-                </td>
-                <td className="num" style={{ fontWeight: 800 }}>{naira(total)}</td>
-                <td></td>
-              </tr>
+              {cfg.kind === 'stock' || cfg.kind === 'product' ? (
+                <tr>
+                  <td colSpan="6" style={{ fontWeight: 700 }}>{rows.length} record{rows.length === 1 ? '' : 's'}</td>
+                </tr>
+              ) : (
+                <tr>
+                  <td colSpan={cfg.kind === 'sale' ? 4 : cfg.kind === 'return' ? 4 : 3} style={{ fontWeight: 700 }}>
+                    {rows.length} record{rows.length === 1 ? '' : 's'}
+                  </td>
+                  <td className="num" style={{ fontWeight: 800 }}>{naira(total)}</td>
+                  <td></td>
+                </tr>
+              )}
             </tfoot>
           </table>
         </div>

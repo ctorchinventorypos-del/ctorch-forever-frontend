@@ -13,10 +13,10 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
   const [form, setForm] = useState({
     product_code: '', name: '', category_id: '', unit: 'pcs',
     cost_price: '', recommended_price: '', reorder_level: '5',
-    initial_branch_id: '', initial_quantity: '',
+    initial_branch_id: '',
   });
   const [hasVariations, setHasVariations] = useState(false);
-  const [variations, setVariations] = useState([{ label: '', product_code: '', initial_quantity: '' }]);
+  const [variations, setVariations] = useState([{ label: '', product_code: '' }]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -27,7 +27,7 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
     next[i] = { ...next[i], [k]: e.target.value };
     setVariations(next);
   };
-  const addVar = () => setVariations([...variations, { label: '', product_code: '', initial_quantity: '' }]);
+  const addVar = () => setVariations([...variations, { label: '', product_code: '' }]);
   const removeVar = (i) => setVariations(variations.filter((_, idx) => idx !== i));
 
   const baseShared = () => ({
@@ -54,17 +54,17 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
             ...baseShared(),
             product_code: form.product_code.trim(),
             name: form.name.trim(),
-            initial_quantity: Number(form.initial_quantity) || 0,
+            initial_quantity: 0,
           },
         });
       } else {
         const rows = variations
-          .filter((v) => v.label.trim() || v.product_code.trim() || v.initial_quantity)
+          .filter((v) => v.label.trim() || v.product_code.trim())
           .map((v) => ({
             ...baseShared(),
             product_code: v.product_code.trim(),
             name: `${form.name.trim()} ${v.label.trim()}`.trim(),
-            initial_quantity: Number(v.initial_quantity) || 0,
+            initial_quantity: 0,
           }));
         if (rows.length === 0) { setBusy(false); return setError('Add at least one variation.'); }
         for (const r of rows) {
@@ -150,15 +150,10 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
       </label>
 
       {!hasVariations ? (
-        <div className="row2">
-          <div className="field">
-            <label>Product code <Tooltip text="A short unique code, e.g. LED-001. You type this when restocking so quantities add up." /></label>
-            <input className="input" value={form.product_code} onChange={set('product_code')} placeholder="e.g. LED-001" />
-          </div>
-          <div className="field">
-            <label>Starting quantity</label>
-            <input className="input" type="number" value={form.initial_quantity} onChange={set('initial_quantity')} placeholder="0" />
-          </div>
+        <div className="field">
+          <label>Product code <Tooltip text="A short unique code, e.g. LED-001. You type this when restocking so quantities add up." /></label>
+          <input className="input" value={form.product_code} onChange={set('product_code')} placeholder="e.g. LED-001" />
+          <small className="subtle">New products start at 0 in stock. An admin sets the real quantity afterwards with “Edit stock”.</small>
         </div>
       ) : (
         <div>
@@ -169,20 +164,14 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
                 <label>Variation {i + 1} label</label>
                 <input className="input" value={v.label} onChange={setVar(i, 'label')} placeholder="e.g. Warm White" />
               </div>
-              <div className="row2">
-                <div className="field">
-                  <label>Code</label>
-                  <input className="input" value={v.product_code} onChange={setVar(i, 'product_code')} placeholder="e.g. LED-001-WW" />
-                </div>
-                <div className="field">
-                  <label>Qty {variations.length > 1 && <button className="linkbtn" style={{ color: 'var(--clay)', float: 'right' }} onClick={() => removeVar(i)}>Remove</button>}</label>
-                  <input className="input" type="number" value={v.initial_quantity} onChange={setVar(i, 'initial_quantity')} placeholder="0" />
-                </div>
+              <div className="field">
+                <label>Code {variations.length > 1 && <button className="linkbtn" style={{ color: 'var(--clay)', float: 'right' }} onClick={() => removeVar(i)}>Remove</button>}</label>
+                <input className="input" value={v.product_code} onChange={setVar(i, 'product_code')} placeholder="e.g. LED-001-WW" />
               </div>
             </div>
           ))}
           <button className="btn btn-ghost" onClick={addVar}>+ Add variation</button>
-          <p className="subtle" style={{ marginTop: 6 }}>Each variation is saved as "{form.name || 'Product'} [label]" with its own code.</p>
+          <p className="subtle" style={{ marginTop: 6 }}>Each variation is saved as "{form.name || 'Product'} [label]" with its own code, starting at 0 in stock.</p>
         </div>
       )}
     </Modal>

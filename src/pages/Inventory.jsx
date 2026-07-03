@@ -11,6 +11,7 @@ import { naira } from '../utils/format';
 import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 import AddProductModal from './inventory/AddProductModal';
 import EditProductModal from './inventory/EditProductModal';
 import RestockModal from './inventory/RestockModal';
@@ -19,6 +20,7 @@ import CategoriesModal from './inventory/CategoriesModal';
 
 export default function Inventory() {
   const { activeId } = useCompany();
+  const { isAdmin } = useAuth();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -48,6 +50,29 @@ export default function Inventory() {
     if (!stockOf) { setBreakdown(null); return; }
     api(`/products/${stockOf.id}`).then((p) => setBreakdown(p.stock_by_branch)).catch(() => {});
   }, [stockOf]);
+
+  // Admin-only: set the exact stock number for this product at a branch.
+  async function editStock(b) {
+    const input = window.prompt(
+      `Set stock for "${stockOf.name}" at ${b.branch_name}.\nCurrent: ${b.quantity}`,
+      String(b.quantity)
+    );
+    if (input === null) return;
+    const val = parseInt(input, 10);
+    if (isNaN(val) || val < 0) { window.alert('Enter a valid quantity (0 or more).'); return; }
+    try {
+      await api('/stock/adjust', {
+        method: 'POST',
+        body: { product_id: stockOf.id, branch_id: b.branch_id, new_quantity: val },
+      });
+      // refresh the breakdown and the product list totals
+      const p = await api(`/products/${stockOf.id}`);
+      setBreakdown(p.stock_by_branch);
+      load();
+    } catch (err) {
+      window.alert(err.message);
+    }
+  }
 
   const term = search.trim().toLowerCase();
   const filtered = products.filter(
@@ -178,6 +203,9 @@ export default function Inventory() {
                   </span>
                 </span>
                 <b>{b.quantity} {stockOf.unit}</b>
+                {isAdmin && (
+                  <button className="linkbtn" style={{ marginLeft: 10 }} onClick={() => editStock(b)}>Edit</button>
+                )}
               </div>
             ))
           )}
