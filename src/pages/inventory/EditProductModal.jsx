@@ -57,7 +57,8 @@ export default function EditProductModal({ product, categories, onClose, onSaved
           name: form.name.trim(),
           category_id: form.category_id || null,
           unit: form.unit || 'pcs',
-          cost_price: Number(form.cost_price) || 0,
+          // Cost price is admin-only; omit it entirely for non-admins.
+          ...(isAdmin ? { cost_price: Number(form.cost_price) || 0 } : {}),
           reorder_level: form.reorder_level === '' ? null : Number(form.reorder_level),
           description: form.description || null,
         },
@@ -118,8 +119,9 @@ export default function EditProductModal({ product, categories, onClose, onSaved
       </div>
 
       <div className="field">
-        <label>Cost price</label>
-        <input className="input" type="number" value={form.cost_price} onChange={set('cost_price')} />
+        <label>Cost price <Tooltip text="Only admins can change the cost price." /></label>
+        <input className="input" type="number" value={form.cost_price} onChange={set('cost_price')} disabled={!isAdmin} />
+        {!isAdmin && <small className="subtle">Ask an admin to change this.</small>}
       </div>
 
       <div className="field">

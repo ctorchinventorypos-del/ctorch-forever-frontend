@@ -6,11 +6,14 @@ import { useState } from 'react';
 import Modal from '../../components/Modal';
 import Tooltip from '../../components/Tooltip';
 import { api } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 
 export default function RestockModal({ products, branches, preselect, onClose, onSaved }) {
+  const { isAdmin } = useAuth();
   const [productId, setProductId] = useState(preselect || '');
   const [branchId, setBranchId] = useState('');
   const [qty, setQty] = useState('');
+  const [cost, setCost] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -20,7 +23,13 @@ export default function RestockModal({ products, branches, preselect, onClose, o
     try {
       await api('/stock/restock', {
         method: 'POST',
-        body: { product_id: productId, branch_id: branchId, quantity: Number(qty) },
+        body: {
+          product_id: productId,
+          branch_id: branchId,
+          quantity: Number(qty),
+          // Admins can set a new cost price for this batch; others can't.
+          ...(isAdmin && cost !== '' ? { cost_price: Number(cost) } : {}),
+        },
       });
       onSaved();
       onClose();
@@ -71,6 +80,13 @@ export default function RestockModal({ products, branches, preselect, onClose, o
           <input className="input" type="number" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="0" />
         </div>
       </div>
+
+      {isAdmin && (
+        <div className="field">
+          <label>New cost price for this batch <Tooltip text="Optional. If you bought this batch at a different cost, enter it here — it updates the product's cost price. Leave blank to keep the current cost. Admins only." /></label>
+          <input className="input" type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="leave blank to keep current" />
+        </div>
+      )}
     </Modal>
   );
 }

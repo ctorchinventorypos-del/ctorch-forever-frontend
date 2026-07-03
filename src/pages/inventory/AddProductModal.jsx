@@ -121,11 +121,11 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
 
       <div className="row2">
         <div className="field">
-          <label>Cost price <Tooltip text="What you buy one unit for." /></label>
+          <label>Cost price <span className="subtle">(optional)</span> <Tooltip text="What you buy one unit for. Can be left blank (0) and set later by an admin." /></label>
           <input className="input" type="number" value={form.cost_price} onChange={set('cost_price')} placeholder="0" />
         </div>
         <div className="field">
-          <label>Selling price <Tooltip text="The recommended price to sell one unit. Shared by all variations; you can edit each one later." /></label>
+          <label>Selling price <span className="subtle">(optional)</span> <Tooltip text="The recommended price to sell one unit. Can be left blank (0); only an admin can change it later." /></label>
           <input className="input" type="number" value={form.recommended_price} onChange={set('recommended_price')} placeholder="0" />
         </div>
       </div>
