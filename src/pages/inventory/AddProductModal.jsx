@@ -12,7 +12,7 @@ import { api } from '../../api/client';
 export default function AddProductModal({ categories, branches, onClose, onSaved }) {
   const [form, setForm] = useState({
     product_code: '', name: '', category_id: '', unit: 'pcs',
-    cost_price: '', recommended_price: '', reorder_level: '5',
+    cost_price: '', recommended_price: '', reorder_level: '5', qty_per_carton: '',
     initial_branch_id: '',
   });
   const [hasVariations, setHasVariations] = useState(false);
@@ -36,6 +36,7 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
     cost_price: Number(form.cost_price) || 0,
     recommended_price: Number(form.recommended_price) || 0,
     reorder_level: form.reorder_level === '' ? 5 : Number(form.reorder_level) || 0,
+    qty_per_carton: form.qty_per_carton === '' ? null : Number(form.qty_per_carton) || null,
     initial_branch_id: form.initial_branch_id,
   });
 
@@ -144,6 +145,11 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="field">
+        <label>Quantity per carton <span className="subtle">(optional)</span> <Tooltip text="How many pieces are in one carton. Lets you sell by the carton later. Can be set or changed by an admin any time." /></label>
+        <input className="input" type="number" value={form.qty_per_carton} onChange={set('qty_per_carton')} placeholder="e.g. 100" />
       </div>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 10px', fontWeight: 600, cursor: 'pointer' }}>

@@ -17,6 +17,7 @@ export default function EditProductModal({ product, categories, onClose, onSaved
     unit: product.unit,
     cost_price: product.cost_price,
     reorder_level: product.reorder_level ?? 5,
+    qty_per_carton: product.qty_per_carton ?? '',
     description: product.description || '',
   });
   const [price, setPrice] = useState(product.recommended_price);
@@ -59,6 +60,7 @@ export default function EditProductModal({ product, categories, onClose, onSaved
           unit: form.unit || 'pcs',
           // Cost price is admin-only; omit it entirely for non-admins.
           ...(isAdmin ? { cost_price: Number(form.cost_price) || 0 } : {}),
+          ...(isAdmin ? { qty_per_carton: form.qty_per_carton === '' ? null : Number(form.qty_per_carton) || null } : {}),
           reorder_level: form.reorder_level === '' ? null : Number(form.reorder_level),
           description: form.description || null,
         },
@@ -122,6 +124,10 @@ export default function EditProductModal({ product, categories, onClose, onSaved
         <label>Cost price <Tooltip text="Only admins can change the cost price." /></label>
         <input className="input" type="number" value={form.cost_price} onChange={set('cost_price')} disabled={!isAdmin} />
         {!isAdmin && <small className="subtle">Ask an admin to change this.</small>}
+      </div>
+      <div className="field">
+        <label>Quantity per carton <Tooltip text="Pieces in one carton. Only admins can change this." /></label>
+        <input className="input" type="number" value={form.qty_per_carton} onChange={set('qty_per_carton')} disabled={!isAdmin} placeholder="not set" />
       </div>
 
       <div className="field">

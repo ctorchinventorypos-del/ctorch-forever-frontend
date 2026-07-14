@@ -14,6 +14,7 @@ export default function RestockModal({ products, branches, preselect, onClose, o
   const [branchId, setBranchId] = useState('');
   const [qty, setQty] = useState('');
   const [cost, setCost] = useState('');
+  const [carton, setCarton] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -29,6 +30,7 @@ export default function RestockModal({ products, branches, preselect, onClose, o
           quantity: Number(qty),
           // Admins can set a new cost price for this batch; others can't.
           ...(isAdmin && cost !== '' ? { cost_price: Number(cost) } : {}),
+          ...(isAdmin && carton !== '' ? { qty_per_carton: Number(carton) } : {}),
         },
       });
       onSaved();
@@ -85,6 +87,13 @@ export default function RestockModal({ products, branches, preselect, onClose, o
         <div className="field">
           <label>New cost price for this batch <Tooltip text="Optional. If you bought this batch at a different cost, enter it here — it updates the product's cost price. Leave blank to keep the current cost. Admins only." /></label>
           <input className="input" type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="leave blank to keep current" />
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="field">
+          <label>Quantity per carton <Tooltip text="Optional. Set or update how many pieces are in a carton. Leave blank to keep current. Admins only." /></label>
+          <input className="input" type="number" value={carton} onChange={(e) => setCarton(e.target.value)} placeholder="leave blank to keep current" />
         </div>
       )}
     </Modal>

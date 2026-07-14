@@ -193,11 +193,15 @@
       const tr = document.createElement("tr");
       if(item){
         const amount = item.quantity * item.unit_price; total += amount;
+        var isCarton = item.sold_as === 'carton' && item.pack_size > 1;
+        var dq = isCarton ? (item.quantity / item.pack_size) : item.quantity;
+        var du = isCarton ? (item.unit_price * item.pack_size) : item.unit_price;
+        var nm = esc(item.name) + (isCarton ? ' (carton of ' + item.pack_size + ')' : '');
         tr.innerHTML =
           '<td class="col-no">'+(i+1)+'.</td>'+
-          '<td class="col-qty">'+item.quantity+'</td>'+
-          '<td>'+esc(item.name)+'</td>'+
-          '<td class="col-price">'+(showPrice?naira(item.unit_price):"-")+'</td>'+
+          '<td class="col-qty">'+dq+'</td>'+
+          '<td>'+nm+'</td>'+
+          '<td class="col-price">'+(showPrice?naira(du):"-")+'</td>'+
           '<td class="col-amt">'+naira(amount)+'</td>';
       } else {
         tr.innerHTML = '<td class="col-no">'+(i+1)+'.</td><td class="col-qty"></td><td></td><td class="col-price"></td><td class="col-amt"></td>';

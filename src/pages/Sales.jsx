@@ -49,7 +49,7 @@ export default function Sales() {
   const [stockMap, setStockMap] = useState({});      // product_id -> qty at branch
   const [cart, setCart] = useState([]);
   const [amountPaid, setAmountPaid] = useState('');
-  const [item, setItem] = useState({ product_id: '', quantity: '', unit_price: '' });
+  const [item, setItem] = useState({ product_id: '', sold_as: 'piece', quantity: '', unit_price: '', total: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
@@ -100,7 +100,7 @@ export default function Sales() {
       if (!p) return;
       const qty = parseInt(it.quantity, 10) || 0;
       const price = Number(it.unit_price) || 0;
-      if (qty > 0) lines.push({ product_id: p.id, name: p.name, unit: p.unit, quantity: qty, unit_price: price, subtotal: qty * price });
+      if (qty > 0) lines.push({ product_id: p.id, name: p.name, unit: p.unit, unitLabel: p.unit, sold_as: 'piece', pack_size: 1, quantity: qty, unit_price: price, subtotal: qty * price });
     });
     if (lines.length) setCart(lines);
     setFromQuote(q.quote_number || null);
@@ -111,7 +111,37 @@ export default function Sales() {
 
   function pickProduct(id) {
     const p = productById(id);
-    setItem({ product_id: id, quantity: '', unit_price: p ? p.recommended_price : '' });
+    const price = p ? Number(p.recommended_price) : 0;
+    setItem({ product_id: id, sold_as: 'piece', quantity: '', unit_price: price || '', total: '' });
+  }
+
+  const packSizeOf = (p, soldAs) => (soldAs === 'carton' ? (parseInt(p && p.qty_per_carton, 10) || 0) : 1);
+
+  // Switch between selling by piece and by carton; reset the default price.
+  function setUnit(soldAs) {
+    const p = productById(item.product_id);
+    const ps = packSizeOf(p, soldAs) || 1;
+    const base = p ? Number(p.recommended_price) : 0;
+    const unit = soldAs === 'carton' ? base * ps : base;
+    const qty = parseInt(item.quantity, 10) || 0;
+    setItem({ ...item, sold_as: soldAs, unit_price: unit || '', total: qty && unit ? qty * unit : '' });
+  }
+
+  // Keep "price each" and "total" in sync — editing one recalculates the other.
+  function onQty(v) {
+    const qty = parseInt(v, 10) || 0;
+    const unit = Number(item.unit_price) || 0;
+    setItem({ ...item, quantity: v, total: qty && unit ? qty * unit : item.total });
+  }
+  function onUnitPrice(v) {
+    const qty = parseInt(item.quantity, 10) || 0;
+    const unit = Number(v) || 0;
+    setItem({ ...item, unit_price: v, total: qty && unit ? qty * unit : '' });
+  }
+  function onTotal(v) {
+    const qty = parseInt(item.quantity, 10) || 0;
+    const total = Number(v) || 0;
+    setItem({ ...item, total: v, unit_price: qty && total ? +(total / qty).toFixed(2) : item.unit_price });
   }
 
   function addItem() {
@@ -122,13 +152,24 @@ export default function Sales() {
     if (!p) return setError('Choose a product.');
     if (!qty || qty <= 0) return setError('Enter a quantity.');
     if (isNaN(price) || price < 0) return setError('Enter a price.');
-    const available = stockMap[p.id] || 0;
-    const already = cart.filter((c) => c.product_id === p.id).reduce((s, c) => s + c.quantity, 0);
-    if (qty + already > available) {
-      return setError(`Only ${available} of ${p.name} available at this branch.`);
+
+    const packSize = packSizeOf(p, item.sold_as);
+    if (item.sold_as === 'carton' && packSize < 1) {
+      return setError(`${p.name} has no carton size set. Sell by piece or ask an admin to set it.`);
     }
-    setCart([...cart, { product_id: p.id, name: p.name, unit: p.unit, quantity: qty, unit_price: price, subtotal: qty * price }]);
-    setItem({ product_id: '', quantity: '', unit_price: '' });
+    const pieces = qty * (packSize || 1);
+    const available = stockMap[p.id] || 0;
+    const alreadyPieces = cart.filter((c) => c.product_id === p.id).reduce((s, c) => s + c.quantity * c.pack_size, 0);
+    if (pieces + alreadyPieces > available) {
+      return setError(`Only ${available} pcs of ${p.name} available at this branch.`);
+    }
+    const unitLabel = item.sold_as === 'carton' ? `carton of ${packSize}` : p.unit;
+    setCart([...cart, {
+      product_id: p.id, name: p.name, unit: p.unit, unitLabel,
+      sold_as: item.sold_as, pack_size: packSize || 1,
+      quantity: qty, unit_price: price, subtotal: qty * price,
+    }]);
+    setItem({ product_id: '', sold_as: 'piece', quantity: '', unit_price: '', total: '' });
   }
 
   const removeItem = (i) => setCart(cart.filter((_, idx) => idx !== i));
@@ -150,7 +191,7 @@ export default function Sales() {
           payment_method: paymentMethod,
           customer_id: saleType === 'cash' ? null : customerId,
           amount_paid: saleType === 'cash' ? undefined : Number(amountPaid) || 0,
-          items: cart.map((c) => ({ product_id: c.product_id, quantity: c.quantity, unit_price: c.unit_price })),
+          items: cart.map((c) => ({ product_id: c.product_id, sold_as: c.sold_as, pack_size: c.pack_size, quantity: c.quantity, unit_price: c.unit_price })),
         },
       });
       setDone(res);
@@ -265,19 +306,31 @@ export default function Sales() {
               ))}
             </select>
             {!branchId && <div className="hint">Choose a branch first to see available stock.</div>}
+            {(() => {
+              const p = productById(item.product_id);
+              const hasCarton = p && parseInt(p.qty_per_carton, 10) > 0;
+              return hasCarton ? (
+                <div className="seg" style={{ marginTop: 8 }}>
+                  <button className={item.sold_as === 'piece' ? 'on' : ''} onClick={() => setUnit('piece')}>Per piece</button>
+                  <button className={item.sold_as === 'carton' ? 'on' : ''} onClick={() => setUnit('carton')}>Per carton ({p.qty_per_carton})</button>
+                </div>
+              ) : null;
+            })()}
           </div>
           <div className="row2">
             <div className="field">
-              <label>Quantity</label>
-              <input className="input" type="number" value={item.quantity}
-                onChange={(e) => setItem({ ...item, quantity: e.target.value })} />
+              <label>Quantity {item.sold_as === 'carton' ? '(cartons)' : ''}</label>
+              <input className="input" type="number" value={item.quantity} onChange={(e) => onQty(e.target.value)} />
             </div>
             <div className="field">
-              <label>Price each <Tooltip text="Defaults to the selling price, but you can charge a different price here." /></label>
-              <input className="input" type="number" value={item.unit_price}
-                onChange={(e) => setItem({ ...item, unit_price: e.target.value })} />
+              <label>Price per {item.sold_as === 'carton' ? 'carton' : 'piece'} <Tooltip text="Defaults to the selling price. Editing this or the Total keeps the other in sync." /></label>
+              <input className="input" type="number" value={item.unit_price} onChange={(e) => onUnitPrice(e.target.value)} />
             </div>
           </div>
+        </div>
+        <div className="field" style={{ maxWidth: 260 }}>
+          <label>Total for this line <Tooltip text="Enter the total and the price per unit is worked out automatically — or the other way round." /></label>
+          <input className="input" type="number" value={item.total} onChange={(e) => onTotal(e.target.value)} placeholder="0" />
         </div>
         <button className="btn btn-ghost" onClick={addItem}>+ Add to sale</button>
       </div>
@@ -289,7 +342,7 @@ export default function Sales() {
             <div className="cart-line" key={i}>
               <div className="g">
                 <div>{c.name}</div>
-                <div className="qty">{c.quantity} {c.unit} × {naira(c.unit_price)}</div>
+                <div className="qty">{c.quantity} {c.unitLabel || c.unit} × {naira(c.unit_price)}</div>
               </div>
               <b>{naira(c.subtotal)}</b>
               <button className="linkbtn" style={{ color: 'var(--clay)' }} onClick={() => removeItem(i)}>Remove</button>
