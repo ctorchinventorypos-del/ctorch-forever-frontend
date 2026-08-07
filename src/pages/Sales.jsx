@@ -56,6 +56,7 @@ export default function Sales() {
   const [addCust, setAddCust] = useState(false);
   const [returning, setReturning] = useState(false);
   const [fromQuote, setFromQuote] = useState(null);  // quote number we converted, if any
+  const [quoteId, setQuoteId] = useState(null);      // quote id, marked converted on completion
 
   // Base data
   useEffect(() => {
@@ -104,6 +105,7 @@ export default function Sales() {
     });
     if (lines.length) setCart(lines);
     setFromQuote(q.quote_number || null);
+    setQuoteId(q.id || null);
     // clear the navigation state so a refresh doesn't re-add the items
     window.history.replaceState({}, '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -191,12 +193,13 @@ export default function Sales() {
           payment_method: paymentMethod,
           customer_id: saleType === 'cash' ? null : customerId,
           amount_paid: saleType === 'cash' ? undefined : Number(amountPaid) || 0,
+          quote_id: quoteId,
           items: cart.map((c) => ({ product_id: c.product_id, sold_as: c.sold_as, pack_size: c.pack_size, quantity: c.quantity, unit_price: c.unit_price })),
         },
       });
       setDone(res);
       saleKeyRef.current = newKey(); // next sale = new action
-      setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setPaymentMethod('cash');
+      setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setQuoteId(null); setPaymentMethod('cash');
       // refresh availability after the sale
       if (branchId) api(`/stock?branch_id=${branchId}`).then((rows) => {
         const m = {}; rows.forEach((r) => { m[r.product_id] = r.quantity; }); setStockMap(m);

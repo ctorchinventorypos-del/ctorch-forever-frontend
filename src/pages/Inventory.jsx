@@ -33,6 +33,21 @@ export default function Inventory() {
   const [editing, setEditing] = useState(null);   // product being edited
   const [stockOf, setStockOf] = useState(null);   // product whose breakdown we're viewing
   const [breakdown, setBreakdown] = useState(null);
+  const [viewBranch, setViewBranch] = useState(''); // '' = all branches (total)
+  const [branchStock, setBranchStock] = useState({}); // product_id -> qty at viewBranch
+
+  // Load the per-branch stock map whenever a specific branch is chosen.
+  useEffect(() => {
+    if (!viewBranch) { setBranchStock({}); return; }
+    api(`/stock?branch_id=${viewBranch}`).then((rows) => {
+      const m = {};
+      rows.forEach((r) => { m[r.product_id] = r.quantity; });
+      setBranchStock(m);
+    }).catch(() => setBranchStock({}));
+  }, [viewBranch, activeId]);
+
+  // Stock figure to show for a product given the current branch filter.
+  const stockFor = (p) => (viewBranch ? (branchStock[p.id] || 0) : p.total_stock);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -109,6 +124,15 @@ export default function Inventory() {
             value={search} onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
+          <span className="subtle" style={{ fontSize: 13 }}>Stock at</span>
+          <select className="input" style={{ maxWidth: 220 }} value={viewBranch} onChange={(e) => setViewBranch(e.target.value)}>
+            <option value="">All branches (total)</option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}{b.is_warehouse ? ' (Warehouse)' : ''}</option>
+            ))}
+          </select>
+        </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
           Show deactivated
@@ -136,9 +160,9 @@ export default function Inventory() {
                   <tr>
                     <th>Product</th>
                     <th>Code</th>
-                    <th className="num">Cost</th>
+                    {isAdmin && <th className="num">Cost</th>}
                     <th className="num">Selling</th>
-                    <th className="num">In stock</th>
+                    <th className="num">{viewBranch ? 'At this branch' : 'In stock'}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -150,13 +174,13 @@ export default function Inventory() {
                         {p.is_active === false && <span className="tag tag-store" style={{ marginLeft: 8 }}>Deactivated</span>}
                       </td>
                       <td><span className="code">{p.product_code}</span></td>
-                      <td className="num">{naira(p.cost_price)}</td>
+                      {isAdmin && <td className="num">{naira(p.cost_price)}</td>}
                       <td className="num">{naira(p.recommended_price)}</td>
                       <td className="num">
                         <button className="stockbadge" onClick={() => setStockOf(p)} title="See where this stock is">
-                          {p.total_stock} {p.unit}
+                          {stockFor(p)} {p.unit}
                         </button>
-                        {p.reorder_level != null && p.total_stock <= p.reorder_level && (
+                        {!viewBranch && p.reorder_level != null && p.total_stock <= p.reorder_level && (
                           <span className="tag" style={{ marginLeft: 6, background: '#fbeee8', color: '#b9512f' }}>Low</span>
                         )}
                       </td>

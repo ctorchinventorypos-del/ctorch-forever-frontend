@@ -120,11 +120,12 @@ export default function EditProductModal({ product, categories, onClose, onSaved
         </div>
       </div>
 
+      {isAdmin && (
       <div className="field">
-        <label>Cost price <Tooltip text="Only admins can change the cost price." /></label>
-        <input className="input" type="number" value={form.cost_price} onChange={set('cost_price')} disabled={!isAdmin} />
-        {!isAdmin && <small className="subtle">Ask an admin to change this.</small>}
+        <label>Cost price <Tooltip text="Only admins can see or change the cost price." /></label>
+        <input className="input" type="number" value={form.cost_price} onChange={set('cost_price')} />
       </div>
+      )}
       <div className="field">
         <label>Quantity per carton <Tooltip text="Pieces in one carton. Only admins can change this." /></label>
         <input className="input" type="number" value={form.qty_per_carton} onChange={set('qty_per_carton')} disabled={!isAdmin} placeholder="not set" />

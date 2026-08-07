@@ -37,8 +37,8 @@ export default function Quotations() {
   async function convert(q) {
     try {
       const full = await api(`/quotations/${q.id}`);
-      await api(`/quotations/${q.id}/status`, { method: 'PATCH', body: { status: 'converted' } });
-      navigate('/sales', { state: { quote: { quote_number: full.quote_number, items: full.items } } });
+      // Don't mark converted here — that happens only when the sale is completed.
+      navigate('/sales', { state: { quote: { id: q.id, quote_number: full.quote_number, items: full.items } } });
     } catch (err) {
       alert(err.message);
     }

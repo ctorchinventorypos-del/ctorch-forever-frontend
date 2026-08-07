@@ -38,6 +38,11 @@ export default function Login() {
 
         <form className="card card-pad" onSubmit={submit}>
           {error && <div className="banner-error">{error}</div>}
+          {(() => {
+            let idle = false;
+            try { idle = sessionStorage.getItem('loggedOutReason') === 'idle'; if (idle) sessionStorage.removeItem('loggedOutReason'); } catch (_) {}
+            return idle ? <div className="banner-error" style={{ background: '#fff7e6', borderColor: '#f0dcae', color: '#8a6d3b' }}>You were signed out after a period of inactivity. Please sign in again.</div> : null;
+          })()}
 
           <div className="field">
             <label htmlFor="u">Username</label>
