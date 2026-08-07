@@ -17,10 +17,19 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
   });
   const [hasVariations, setHasVariations] = useState(false);
   const [variations, setVariations] = useState([{ label: '', product_code: '', cost_price: '', recommended_price: '' }]);
+  const [stockRows, setStockRows] = useState([{ branch_id: '', quantity: '' }]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const setStock = (i, k) => (e) => {
+    const next = stockRows.slice();
+    next[i] = { ...next[i], [k]: e.target.value };
+    setStockRows(next);
+  };
+  const addStockRow = () => setStockRows([...stockRows, { branch_id: '', quantity: '' }]);
+  const removeStockRow = (i) => setStockRows(stockRows.filter((_, idx) => idx !== i));
 
   const setVar = (i, k) => (e) => {
     const next = variations.slice();
@@ -30,6 +39,9 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
   const addVar = () => setVariations([...variations, { label: '', product_code: '', cost_price: '', recommended_price: '' }]);
   const removeVar = (i) => setVariations(variations.filter((_, idx) => idx !== i));
 
+  // Rows where a branch was chosen. The first is the required primary location.
+  const chosenStock = () => stockRows.filter((r) => r.branch_id);
+
   const baseShared = () => ({
     category_id: form.category_id || null,
     unit: form.unit || 'pcs',
@@ -37,13 +49,21 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
     recommended_price: Number(form.recommended_price) || 0,
     reorder_level: form.reorder_level === '' ? 5 : Number(form.reorder_level) || 0,
     qty_per_carton: form.qty_per_carton === '' ? null : Number(form.qty_per_carton) || null,
-    initial_branch_id: form.initial_branch_id,
+    initial_branch_id: chosenStock()[0] ? chosenStock()[0].branch_id : '',
   });
 
   async function save() {
     setError('');
     if (!form.name.trim()) return setError('Enter a product name.');
-    if (!form.initial_branch_id) return setError('Choose the starting stock location.');
+    const stock = chosenStock();
+    if (stock.length === 0) return setError('Choose at least one starting stock location.');
+    // Guard against the same branch twice.
+    const ids = stock.map((s) => String(s.branch_id));
+    if (new Set(ids).size !== ids.length) return setError('You picked the same location twice.');
+
+    // primary = first chosen row; extras seed additional branches.
+    const primaryQty = stock[0].quantity === '' ? 0 : Number(stock[0].quantity) || 0;
+    const extraStock = stock.slice(1).map((s) => ({ branch_id: s.branch_id, quantity: s.quantity === '' ? 0 : Number(s.quantity) || 0 }));
 
     setBusy(true);
     try {
@@ -55,7 +75,8 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
             ...baseShared(),
             product_code: form.product_code.trim(),
             name: form.name.trim(),
-            initial_quantity: 0,
+            initial_quantity: primaryQty,
+            initial_stock: extraStock,
           },
         });
       } else {
@@ -131,26 +152,41 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
         </div>
       </div>
 
-      <div className="row2">
-        <div className="field">
-          <label>Low-stock level <Tooltip text="When total stock falls to this number or below, the product is flagged as low." /></label>
-          <input className="input" type="number" value={form.reorder_level} onChange={set('reorder_level')} placeholder="5" />
-        </div>
-        <div className="field">
-          <label>Starting stock location <Tooltip text="Which branch or warehouse the opening stock goes into. Required." /></label>
-          <select className="input" value={form.initial_branch_id} onChange={set('initial_branch_id')}>
-            <option value="">— choose —</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}{b.is_warehouse ? ' (Warehouse)' : ''}</option>
-            ))}
-          </select>
-        </div>
+      <div className="field">
+        <label>Low-stock level <Tooltip text="When total stock falls to this number or below, the product is flagged as low." /></label>
+        <input className="input" type="number" value={form.reorder_level} onChange={set('reorder_level')} placeholder="5" style={{ maxWidth: 200 }} />
       </div>
 
-      <div className="field">
-        <label>Quantity per carton <span className="subtle">(optional)</span> <Tooltip text="How many pieces are in one carton. Lets you sell by the carton later. Can be set or changed by an admin any time." /></label>
-        <input className="input" type="number" value={form.qty_per_carton} onChange={set('qty_per_carton')} placeholder="e.g. 100" />
+      <div className="sectionhead" style={{ marginTop: 4 }}>
+        Starting stock <Tooltip text="Choose at least one location. The quantity is optional — leave it blank to start at 0. Add more locations to stock several branches at once." />
       </div>
+      {stockRows.map((r, i) => (
+        <div className="row2" key={i} style={{ alignItems: 'end' }}>
+          <div className="field">
+            <label>{i === 0 ? 'Location' : `Location ${i + 1}`}</label>
+            <select className="input" value={r.branch_id} onChange={setStock(i, 'branch_id')}>
+              <option value="">— choose —</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}{b.is_warehouse ? ' (Warehouse)' : ''}</option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Quantity <span className="subtle">(optional)</span>
+              {stockRows.length > 1 && <button className="linkbtn" style={{ color: 'var(--clay)', float: 'right' }} onClick={() => removeStockRow(i)}>Remove</button>}
+            </label>
+            <input className="input" type="number" value={r.quantity} onChange={setStock(i, 'quantity')} placeholder="0" />
+          </div>
+        </div>
+      ))}
+      <button className="btn btn-ghost" onClick={addStockRow}>+ Add another location</button>
+
+      <div className="field" style={{ marginTop: 12 }}>
+        <label>Quantity per carton <span className="subtle">(optional)</span> <Tooltip text="How many pieces are in one carton. Lets you sell by the carton later. Can be set or changed by an admin any time." /></label>
+        <input className="input" type="number" value={form.qty_per_carton} onChange={set('qty_per_carton')} placeholder="e.g. 100" style={{ maxWidth: 200 }} />
+      </div>
+
+      {hasVariations && <p className="subtle" style={{ marginTop: 2 }}>Note: with variations, the starting quantity applies per variation as 0 — set each variation's stock afterward. The first location above is used as their location.</p>}
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 10px', fontWeight: 600, cursor: 'pointer' }}>
         <input type="checkbox" checked={hasVariations} onChange={(e) => setHasVariations(e.target.checked)} />
