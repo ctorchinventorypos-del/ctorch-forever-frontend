@@ -12,10 +12,12 @@ import { useAuth } from '../context/AuthContext';
 const IDLE_MINUTES = 30;
 
 export default function Layout() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const timer = useRef(null);
 
   useEffect(() => {
+    // Super admin can remove the sign-in timeout for an account.
+    if (user && user.no_idle_timeout) return undefined;
     const reset = () => {
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
@@ -31,7 +33,7 @@ export default function Layout() {
       events.forEach((e) => window.removeEventListener(e, reset));
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [logout]);
+  }, [logout, user]);
   const [menuOpen, setMenuOpen] = useState(false);
   const close = () => setMenuOpen(false);
 

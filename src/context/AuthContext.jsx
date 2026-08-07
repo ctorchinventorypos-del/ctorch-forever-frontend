@@ -38,7 +38,12 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
-  const value = { user, login, logout, isAdmin: user?.role === 'admin' };
+  const role = user?.role;
+  const isSuperAdmin = role === 'super_admin';
+  const isAdmin = role === 'admin' || role === 'super_admin'; // admin checks include super admin
+  const isWarehouse = role === 'warehouse';
+  const isSales = role === 'sales';
+  const value = { user, login, logout, role, isAdmin, isSuperAdmin, isWarehouse, isSales };
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
 

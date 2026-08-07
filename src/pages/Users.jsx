@@ -8,12 +8,28 @@ import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
 import UserModal from './users/UserModal';
+import { useAuth } from '../context/AuthContext';
+
+const ROLE_LABELS = { super_admin: 'Super admin', admin: 'Admin', warehouse: 'Warehouse', sales: 'Sales' };
 
 export default function Users() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null); // user object or 'new'
   const [historyUser, setHistoryUser] = useState(null); // user whose logins we're viewing
+  const { user: me, isSuperAdmin } = useAuth();
+
+  async function toggleTimeout(u) {
+    const remove = !u.no_idle_timeout;
+    const msg = remove
+      ? `Remove the inactivity sign-out for ${u.full_name}? They will stay signed in until they log out manually.`
+      : `Re-enable the inactivity sign-out for ${u.full_name}?`;
+    if (!window.confirm(msg)) return;
+    try {
+      await api(`/users/${u.id}/timeout`, { method: 'PATCH', body: { no_idle_timeout: remove } });
+      load();
+    } catch (err) { window.alert(err.message); }
+  }
 
   const load = useCallback(() => {
     setLoading(true);
@@ -46,7 +62,12 @@ export default function Users() {
                 <tr key={u.id}>
                   <td>{u.full_name}</td>
                   <td className="subtle">{u.username}</td>
-                  <td><span className={`tag ${u.role === 'admin' ? 'tag-wh' : 'tag-store'}`}>{u.role}</span></td>
+                  <td>
+                    <span className={`tag ${u.role === 'admin' || u.role === 'super_admin' ? 'tag-wh' : 'tag-store'}`}>
+                      {ROLE_LABELS[u.role] || u.role}
+                    </span>
+                    {u.no_idle_timeout && <span className="tag tag-store" style={{ marginLeft: 6 }} title="No inactivity sign-out">no timeout</span>}
+                  </td>
                   <td>
                     {u.is_active
                       ? <span style={{ color: 'var(--green-700)', fontWeight: 700 }}>Active</span>
@@ -57,6 +78,14 @@ export default function Users() {
                     <button className="linkbtn" onClick={() => setHistoryUser(u)}>History</button>
                     {' · '}
                     <button className="linkbtn" onClick={() => setEditing(u)}>Manage</button>
+                    {isSuperAdmin && me?.id !== u.id && (
+                      <>
+                        {' · '}
+                        <button className="linkbtn" onClick={() => toggleTimeout(u)}>
+                          {u.no_idle_timeout ? 'Enable timeout' : 'Remove timeout'}
+                        </button>
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}

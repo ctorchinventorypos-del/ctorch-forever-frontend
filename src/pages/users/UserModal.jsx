@@ -10,7 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function UserModal({ user, onClose, onSaved }) {
   const editing = !!user;
-  const { user: me } = useAuth();
+  const { user: me, isSuperAdmin } = useAuth();
   const isSelf = editing && me?.id === user.id;
 
   const [form, setForm] = useState({
@@ -87,12 +87,15 @@ export default function UserModal({ user, onClose, onSaved }) {
       </div>
 
       <div className="field">
-        <label>Role <Tooltip text="Admins can manage users and prices. Sales users record sales, payments and stock but can't change prices or users." /></label>
+        <label>Role <Tooltip text="Super admin: everything + can remove sign-in timeouts. Admin: full control. Warehouse: add stock & view. Sales: make sales & sales orders, view-only inventory, no profit." /></label>
         <select className="input" value={form.role} onChange={set('role')} disabled={isSelf}>
           <option value="sales">Sales</option>
+          <option value="warehouse">Warehouse</option>
           <option value="admin">Admin</option>
+          {isSuperAdmin && <option value="super_admin">Super admin</option>}
         </select>
         {isSelf && <small className="subtle">You can't change your own role.</small>}
+        {!isSuperAdmin && form.role === 'super_admin' && <small className="subtle">Only a super admin can change a super admin.</small>}
       </div>
 
       {!editing && (
