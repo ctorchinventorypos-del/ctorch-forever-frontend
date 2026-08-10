@@ -19,10 +19,11 @@ export default function Reports() {
 
   const TABS = [
     isAdmin && { key: 'profit', label: 'Profit' },
-    { key: 'sales', label: 'Sales summary' },
-    { key: 'branch', label: 'Branch performance' },
-    { key: 'inventory', label: 'Inventory' },
-    { key: 'cash', label: 'Daily cash' },
+    { key: 'sales', label: 'Sales summary' },      // revenue only, no profit
+    isAdmin && { key: 'branch', label: 'Branch performance' },
+    isAdmin && { key: 'inventory', label: 'Inventory' },
+    isAdmin && { key: 'cash', label: 'Daily cash' },
+    { key: 'returns', label: 'Returns' },           // customer / sales-safe
   ].filter(Boolean);
 
   const [tab, setTab] = useState(TABS[0].key);
@@ -48,6 +49,7 @@ export default function Reports() {
     else if (tab === 'sales') url = `/reports/sales-summary?group=${group === 'year' ? 'month' : group}${dateQS()}`;
     else if (tab === 'branch') url = `/reports/branch-performance?x=1${dateQS()}`;
     else if (tab === 'cash') url = `/reports/daily-cash?date=${cashDate}`;
+    else if (tab === 'returns') url = `/returns/customer?x=1${dateQS()}`;
     else url = '/reports/inventory';
     api(url).then(setData).catch(() => setData(null)).finally(() => setLoading(false));
   }, [tab, group, dateQS, cashDate]);
@@ -70,7 +72,7 @@ export default function Reports() {
         ))}
       </div>
 
-      {(tab === 'profit' || tab === 'sales' || tab === 'branch') && (
+      {(tab === 'profit' || tab === 'sales' || tab === 'branch' || tab === 'returns') && (
         <div className="toolbar-row" style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           {(tab === 'profit' || tab === 'sales') && (
             <select className="input" style={{ maxWidth: 170 }} value={group} onChange={(e) => setGroup(e.target.value)}>
@@ -104,8 +106,35 @@ export default function Reports() {
           {tab === 'branch' && <BranchTable rows={data} isAdmin={isAdmin} />}
           {tab === 'inventory' && <InventoryReport data={data} isAdmin={isAdmin} />}
           {tab === 'cash' && <DailyCash data={data} />}
+          {tab === 'returns' && <ReturnsTable rows={data} />}
         </>
       )}
+    </div>
+  );
+}
+
+function ReturnsTable({ rows }) {
+  if (!Array.isArray(rows) || rows.length === 0) return <p className="subtle">No returns in this period.</p>;
+  const total = rows.reduce((s, r) => s + Number(r.total_amount || 0), 0);
+  const fmt = (d) => new Date(d).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' });
+  return (
+    <div className="table-wrap">
+      <table className="t">
+        <thead><tr><th>Date</th><th>Return No.</th><th>Customer</th><th>Back to</th><th className="num">Value</th><th></th></tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              <td>{fmt(r.created_at)}</td>
+              <td><span className="code">{r.return_number}</span></td>
+              <td>{r.customer_name}</td>
+              <td className="subtle">{r.branch_name}</td>
+              <td className="num">{naira(r.total_amount)}</td>
+              <td className="num"><button className="linkbtn" onClick={() => window.open(`/return-invoice.html?id=${r.id}&copy=customer`, '_blank')}>Print</button></td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot><tr><td colSpan="4" style={{ fontWeight: 700 }}>Total returned</td><td className="num" style={{ fontWeight: 800 }}>{naira(total)}</td><td></td></tr></tfoot>
+      </table>
     </div>
   );
 }
