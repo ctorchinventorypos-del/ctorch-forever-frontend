@@ -13,9 +13,9 @@ import Spinner from '../components/Spinner';
 const TYPES = [
   { key: 'cash_sales',       label: 'Cash sales',         path: '/sales?sale_type=cash',          kind: 'sale' },
   { key: 'credit_sales',     label: 'Credit sales',       path: '/sales?sale_type=credit',        kind: 'sale' },
-  { key: 'reseller_sales',   label: 'Goods to resellers', path: '/sales?sale_type=reseller',      kind: 'sale' },
+  { key: 'reseller_sales',   label: 'Goods to distributors', path: '/sales?sale_type=reseller',      kind: 'sale' },
   { key: 'credit_payments',  label: 'Credit payments',    path: '/payments?customer_type=credit', kind: 'payment' },
-  { key: 'reseller_payments',label: 'Reseller payments',  path: '/payments?customer_type=reseller', kind: 'payment' },
+  { key: 'reseller_payments',label: 'Distributor payments',  path: '/payments?customer_type=reseller', kind: 'payment' },
   { key: 'returns',          label: 'Returns',            path: '/returns',                       kind: 'return' },
   { key: 'stock_changes',    label: 'Stock changes',      path: '/stock/movements',               kind: 'stock' },
   { key: 'products_added',   label: 'Products added',     path: '/products?include_inactive=1',   kind: 'product' },

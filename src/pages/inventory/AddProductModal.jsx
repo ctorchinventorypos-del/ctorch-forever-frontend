@@ -8,39 +8,32 @@ import { useState } from 'react';
 import Modal from '../../components/Modal';
 import Tooltip from '../../components/Tooltip';
 import { api } from '../../api/client';
+import SearchableSelect from '../../components/SearchableSelect';
+import NumberField from '../../components/NumberField';
 
 export default function AddProductModal({ categories, branches, onClose, onSaved }) {
   const [form, setForm] = useState({
     product_code: '', name: '', category_id: '', unit: 'pcs',
     cost_price: '', recommended_price: '', reorder_level: '5', qty_per_carton: '',
-    initial_branch_id: '',
+    initial_quantity: '',
   });
   const [hasVariations, setHasVariations] = useState(false);
-  const [variations, setVariations] = useState([{ label: '', product_code: '', cost_price: '', recommended_price: '' }]);
-  const [stockRows, setStockRows] = useState([{ branch_id: '', quantity: '' }]);
+  const [variations, setVariations] = useState([{ label: '', product_code: '', cost_price: '', recommended_price: '', initial_quantity: '' }]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
-  const setStock = (i, k) => (e) => {
-    const next = stockRows.slice();
-    next[i] = { ...next[i], [k]: e.target.value };
-    setStockRows(next);
-  };
-  const addStockRow = () => setStockRows([...stockRows, { branch_id: '', quantity: '' }]);
-  const removeStockRow = (i) => setStockRows(stockRows.filter((_, idx) => idx !== i));
+  // New stock always goes into the company's warehouse.
+  const warehouse = branches.find((b) => b.is_warehouse);
 
   const setVar = (i, k) => (e) => {
     const next = variations.slice();
     next[i] = { ...next[i], [k]: e.target.value };
     setVariations(next);
   };
-  const addVar = () => setVariations([...variations, { label: '', product_code: '', cost_price: '', recommended_price: '' }]);
+  const addVar = () => setVariations([...variations, { label: '', product_code: '', cost_price: '', recommended_price: '', initial_quantity: '' }]);
   const removeVar = (i) => setVariations(variations.filter((_, idx) => idx !== i));
-
-  // Rows where a branch was chosen. The first is the required primary location.
-  const chosenStock = () => stockRows.filter((r) => r.branch_id);
 
   const baseShared = () => ({
     category_id: form.category_id || null,
@@ -49,21 +42,13 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
     recommended_price: Number(form.recommended_price) || 0,
     reorder_level: form.reorder_level === '' ? 5 : Number(form.reorder_level) || 0,
     qty_per_carton: form.qty_per_carton === '' ? null : Number(form.qty_per_carton) || null,
-    initial_branch_id: chosenStock()[0] ? chosenStock()[0].branch_id : '',
+    initial_branch_id: warehouse ? warehouse.id : '',
   });
 
   async function save() {
     setError('');
     if (!form.name.trim()) return setError('Enter a product name.');
-    const stock = chosenStock();
-    if (stock.length === 0) return setError('Choose at least one starting stock location.');
-    // Guard against the same branch twice.
-    const ids = stock.map((s) => String(s.branch_id));
-    if (new Set(ids).size !== ids.length) return setError('You picked the same location twice.');
-
-    // primary = first chosen row; extras seed additional branches.
-    const primaryQty = stock[0].quantity === '' ? 0 : Number(stock[0].quantity) || 0;
-    const extraStock = stock.slice(1).map((s) => ({ branch_id: s.branch_id, quantity: s.quantity === '' ? 0 : Number(s.quantity) || 0 }));
+    if (!warehouse) return setError('No warehouse found for this company.');
 
     setBusy(true);
     try {
@@ -75,8 +60,7 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
             ...baseShared(),
             product_code: form.product_code.trim(),
             name: form.name.trim(),
-            initial_quantity: primaryQty,
-            initial_stock: extraStock,
+            initial_quantity: form.initial_quantity === '' ? 0 : Number(form.initial_quantity) || 0,
           },
         });
       } else {
@@ -87,9 +71,9 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
             // Per-variation price overrides the base when filled in.
             cost_price: v.cost_price !== '' ? Number(v.cost_price) || 0 : Number(form.cost_price) || 0,
             recommended_price: v.recommended_price !== '' ? Number(v.recommended_price) || 0 : Number(form.recommended_price) || 0,
+            initial_quantity: v.initial_quantity === '' ? 0 : Number(v.initial_quantity) || 0,
             product_code: v.product_code.trim(),
             name: `${form.name.trim()} ${v.label.trim()}`.trim(),
-            initial_quantity: 0,
           }));
         if (rows.length === 0) { setBusy(false); return setError('Add at least one variation.'); }
         for (const r of rows) {
@@ -130,10 +114,9 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
       <div className="row2">
         <div className="field">
           <label>Category</label>
-          <select className="input" value={form.category_id} onChange={set('category_id')}>
-            <option value="">— none —</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <SearchableSelect value={form.category_id} onChange={(v) => setForm({ ...form, category_id: v })}
+            placeholder="— none —"
+            options={[{ value: '', label: '— none —' }].concat(categories.map((c) => ({ value: c.id, label: c.name })))} />
         </div>
         <div className="field">
           <label>Unit <Tooltip text="How it's counted: pieces, rolls, cartons, etc." /></label>
@@ -144,49 +127,32 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
       <div className="row2">
         <div className="field">
           <label>Cost price <span className="subtle">(optional)</span> <Tooltip text="What you buy one unit for. Can be left blank (0) and set later by an admin." /></label>
-          <input className="input" type="number" value={form.cost_price} onChange={set('cost_price')} placeholder="0" />
+          <NumberField className="input" value={form.cost_price} onChange={(v) => setForm({ ...form, cost_price: v })} placeholder="0" />
         </div>
         <div className="field">
           <label>Selling price <span className="subtle">(optional)</span> <Tooltip text="The recommended price to sell one unit. Can be left blank (0); only an admin can change it later." /></label>
-          <input className="input" type="number" value={form.recommended_price} onChange={set('recommended_price')} placeholder="0" />
+          <NumberField className="input" value={form.recommended_price} onChange={(v) => setForm({ ...form, recommended_price: v })} placeholder="0" />
         </div>
       </div>
 
-      <div className="field">
-        <label>Low-stock level <Tooltip text="When total stock falls to this number or below, the product is flagged as low." /></label>
-        <input className="input" type="number" value={form.reorder_level} onChange={set('reorder_level')} placeholder="5" style={{ maxWidth: 200 }} />
-      </div>
-
-      <div className="sectionhead" style={{ marginTop: 4 }}>
-        Starting stock <Tooltip text="Choose at least one location. The quantity is optional — leave it blank to start at 0. Add more locations to stock several branches at once." />
-      </div>
-      {stockRows.map((r, i) => (
-        <div className="row2" key={i} style={{ alignItems: 'end' }}>
-          <div className="field">
-            <label>{i === 0 ? 'Location' : `Location ${i + 1}`}</label>
-            <select className="input" value={r.branch_id} onChange={setStock(i, 'branch_id')}>
-              <option value="">— choose —</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}{b.is_warehouse ? ' (Warehouse)' : ''}</option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label>Quantity <span className="subtle">(optional)</span>
-              {stockRows.length > 1 && <button className="linkbtn" style={{ color: 'var(--clay)', float: 'right' }} onClick={() => removeStockRow(i)}>Remove</button>}
-            </label>
-            <input className="input" type="number" value={r.quantity} onChange={setStock(i, 'quantity')} placeholder="0" />
-          </div>
+      <div className="row2">
+        <div className="field">
+          <label>Low-stock level <Tooltip text="When total stock falls to this number or below, the product is flagged as low." /></label>
+          <NumberField className="input" allowDecimal={false} value={form.reorder_level} onChange={(v) => setForm({ ...form, reorder_level: v })} placeholder="5" />
         </div>
-      ))}
-      <button className="btn btn-ghost" onClick={addStockRow}>+ Add another location</button>
+        {!hasVariations && (
+          <div className="field">
+            <label>Starting quantity <span className="subtle">(optional)</span> <Tooltip text={`Opening stock, placed in ${warehouse ? warehouse.name : 'the warehouse'}. Leave blank to start at 0. Move to a branch later with Transfer.`} /></label>
+            <NumberField className="input" allowDecimal={false} value={form.initial_quantity} onChange={(v) => setForm({ ...form, initial_quantity: v })} placeholder="0" />
+          </div>
+        )}
+      </div>
+      <p className="subtle" style={{ marginTop: -2 }}>New stock is placed in <b>{warehouse ? warehouse.name : 'the warehouse'}</b>. Use Transfer to move it to a branch.</p>
 
       <div className="field" style={{ marginTop: 12 }}>
         <label>Quantity per carton <span className="subtle">(optional)</span> <Tooltip text="How many pieces are in one carton. Lets you sell by the carton later. Can be set or changed by an admin any time." /></label>
-        <input className="input" type="number" value={form.qty_per_carton} onChange={set('qty_per_carton')} placeholder="e.g. 100" style={{ maxWidth: 200 }} />
+        <NumberField className="input" allowDecimal={false} value={form.qty_per_carton} onChange={(v) => setForm({ ...form, qty_per_carton: v })} placeholder="e.g. 100" style={{ maxWidth: 200 }} />
       </div>
-
-      {hasVariations && <p className="subtle" style={{ marginTop: 2 }}>Note: with variations, the starting quantity applies per variation as 0 — set each variation's stock afterward. The first location above is used as their location.</p>}
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 10px', fontWeight: 600, cursor: 'pointer' }}>
         <input type="checkbox" checked={hasVariations} onChange={(e) => setHasVariations(e.target.checked)} />
@@ -218,17 +184,21 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
               <div className="row2">
                 <div className="field">
                   <label>Cost price <span className="subtle">(optional)</span></label>
-                  <input className="input" type="number" value={v.cost_price} onChange={setVar(i, 'cost_price')} placeholder={form.cost_price || '0'} />
+                  <NumberField className="input" value={v.cost_price} onChange={(val) => setVar(i, 'cost_price')({ target: { value: val } })} placeholder={form.cost_price || '0'} />
                 </div>
                 <div className="field">
                   <label>Selling price <span className="subtle">(optional)</span></label>
-                  <input className="input" type="number" value={v.recommended_price} onChange={setVar(i, 'recommended_price')} placeholder={form.recommended_price || '0'} />
+                  <NumberField className="input" value={v.recommended_price} onChange={(val) => setVar(i, 'recommended_price')({ target: { value: val } })} placeholder={form.recommended_price || '0'} />
                 </div>
+              </div>
+              <div className="field">
+                <label>Starting quantity <span className="subtle">(optional)</span></label>
+                <NumberField className="input" allowDecimal={false} value={v.initial_quantity} onChange={(val) => setVar(i, 'initial_quantity')({ target: { value: val } })} placeholder="0" style={{ maxWidth: 200 }} />
               </div>
             </div>
           ))}
           <button className="btn btn-ghost" onClick={addVar}>+ Add variation</button>
-          <p className="subtle" style={{ marginTop: 6 }}>Each variation is saved as "{form.name || 'Product'} [label]" with its own code, starting at 0 in stock. Leave a variation's price blank to use the base price above.</p>
+          <p className="subtle" style={{ marginTop: 6 }}>Each variation is saved as "{form.name || 'Product'} [label]" with its own code and its own starting quantity, placed in {warehouse ? warehouse.name : 'the warehouse'}. Leave a price blank to use the base price above.</p>
         </div>
       )}
     </Modal>

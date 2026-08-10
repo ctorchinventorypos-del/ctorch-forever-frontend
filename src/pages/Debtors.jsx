@@ -83,7 +83,7 @@ export default function Debtors() {
           <div className="empty">
             <div className="big">🎉</div>
             <h2 style={{ marginBottom: 6 }}>Nobody owes you</h2>
-            <p>Every customer and reseller is fully paid up.</p>
+            <p>Every customer and distributor is fully paid up.</p>
           </div>
         </div>
       ) : (

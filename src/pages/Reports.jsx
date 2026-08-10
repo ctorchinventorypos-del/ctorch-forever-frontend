@@ -53,6 +53,9 @@ export default function Reports() {
   }, [tab, group, dateQS, cashDate]);
 
   useEffect(() => { if (activeId) load(); }, [activeId, load]);
+  // Clear the previous tab's data immediately so a mismatched shape can't crash
+  // the incoming tab's view while its own data is still loading.
+  useEffect(() => { setData(null); }, [tab]);
 
   return (
     <div>
@@ -108,7 +111,8 @@ export default function Reports() {
 }
 
 function DailyCash({ data }) {
-  const m = data.methods;
+  const m = data.methods || { cash: 0, transfer: 0, pos: 0, cheque: 0 };
+  const list = data.list || [];
   const fmtT = (d) => new Date(d).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
   return (
     <>
@@ -126,7 +130,7 @@ function DailyCash({ data }) {
         </div>
       </div>
 
-      {data.list.length === 0 ? (
+      {list.length === 0 ? (
         <p className="subtle">No payments received on this date.</p>
       ) : (
         <div className="table-wrap">
@@ -135,7 +139,7 @@ function DailyCash({ data }) {
               <tr><th>Time</th><th>Type</th><th>Reference</th><th>From</th><th>Method</th><th>Received by</th><th className="num">Amount</th></tr>
             </thead>
             <tbody>
-              {data.list.map((r, i) => (
+              {list.map((r, i) => (
                 <tr key={i}>
                   <td className="subtle">{fmtT(r.created_at)}</td>
                   <td>{r.kind}</td>
@@ -209,7 +213,7 @@ function SalesTable({ rows }) {
             <th className="num">Sales</th>
             <th className="num">Cash</th>
             <th className="num">Credit</th>
-            <th className="num">Reseller</th>
+            <th className="num">Distributor</th>
             <th className="num">Revenue</th>
             <th className="num">Collected</th>
           </tr>

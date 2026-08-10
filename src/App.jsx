@@ -12,6 +12,7 @@ import Sales from './pages/Sales';
 import Customers from './pages/Customers';
 import Records from './pages/Records';
 import Reports from './pages/Reports';
+import Account from './pages/Account';
 import Debtors from './pages/Debtors';
 import Quotations from './pages/Quotations';
 import Branches from './pages/Branches';
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/debtors" element={<Debtors />} />
         <Route path="/records" element={<Records />} />
         <Route path="/reports" element={<ProtectedRoute adminOnly><Reports /></ProtectedRoute>} />
+        <Route path="/account" element={<ProtectedRoute adminOnly><Account /></ProtectedRoute>} />
         <Route path="/branches" element={<Branches />} />
         <Route
           path="/users"

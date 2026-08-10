@@ -8,17 +8,18 @@ import { useAuth } from '../context/AuthContext';
 const links = [
   { to: '/', label: 'Dashboard', ico: '🏠', end: true },
   { to: '/inventory', label: 'Inventory', ico: '📦' },
-  { to: '/sales', label: 'Sales', ico: '🧾' },
-  { to: '/quotations', label: 'Quotations', ico: '📝' },
-  { to: '/customers', label: 'Customers', ico: '👥' },
-  { to: '/debtors', label: 'Who owes me', ico: '💰' },
-  { to: '/records', label: 'Records', ico: '🗂️' },
+  { to: '/sales', label: 'Sales', ico: '🧾', hideFor: ['warehouse'] },
+  { to: '/quotations', label: 'Sales orders', ico: '📝' },
+  { to: '/customers', label: 'Customers', ico: '👥', hideFor: ['warehouse'] },
+  { to: '/debtors', label: 'Who owes me', ico: '💰', hideFor: ['warehouse'] },
+  { to: '/records', label: 'Records', ico: '🗂️', hideFor: ['warehouse'] },
   { to: '/reports', label: 'Reports', ico: '📊', adminOnly: true },
+  { to: '/account', label: 'Account', ico: '💵', adminOnly: true },
   { to: '/branches', label: 'Branches', ico: '🏬' },
 ];
 
 export default function Sidebar({ open, onNavigate }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, role } = useAuth();
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>
       <div className="brand">
@@ -29,7 +30,7 @@ export default function Sidebar({ open, onNavigate }) {
         </div>
       </div>
 
-      {links.filter((l) => !l.adminOnly || isAdmin).map((l) => (
+      {links.filter((l) => (!l.adminOnly || isAdmin) && !(l.hideFor || []).includes(role)).map((l) => (
         <NavLink key={l.to} to={l.to} end={l.end} className="nav-link" onClick={onNavigate}>
           <span className="ico">{l.ico}</span>
           {l.label}

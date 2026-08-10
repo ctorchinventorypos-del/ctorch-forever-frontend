@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { api } from '../../api/client';
+import NumberField from '../../components/NumberField';
 import { naira } from '../../utils/format';
 import { useCompany } from '../../context/CompanyContext';
 
@@ -26,7 +27,7 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
     // Extra care for bulk resellers: confirm before recording.
     if (customer.customer_type === 'reseller') {
       const ok = window.confirm(
-        `This is a payment for a BULK RESELLER (${customer.name}).\n\n` +
+        `This is a payment for a DISTRIBUTOR (${customer.name}).\n\n` +
         `Amount: ${naira(amt)} (${method}).\n\nPlease confirm this is correct before recording.`
       );
       if (!ok) return;
@@ -110,13 +111,13 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
       </p>
       <div className="field">
         <label>Amount paid</label>
-        <input className="input" type="number" value={amount} autoFocus
-          onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+        <NumberField className="input" value={amount} autoFocus
+          onChange={setAmount} placeholder="0" />
       </div>
       <div className="field">
         <label>Payment method</label>
         <div className="seg">
-          {[['cash', 'Cash'], ['transfer', 'Transfer'], ['pos', 'POS card'], ['cheque', 'Cheque']].map(([k, lbl]) => (
+          {[['cash', 'Cash'], ['pos', 'POS Card (Moniepoint)'], ['transfer_moniepoint', 'Transfer - Moniepoint'], ['transfer_zenith', 'Transfer - Zenith Bank'], ['cheque', 'Cheque']].map(([k, lbl]) => (
             <button key={k} className={method === k ? 'on' : ''} onClick={() => setMethod(k)}>{lbl}</button>
           ))}
         </div>

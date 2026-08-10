@@ -45,7 +45,7 @@ export default function Quotations() {
   }
 
   async function del(q) {
-    if (!window.confirm(`Delete quotation ${q.quote_number} and all its revisions?`)) return;
+    if (!window.confirm(`Delete sales order ${q.quote_number} and all its revisions?`)) return;
     try { await api(`/quotations/${q.id}`, { method: 'DELETE' }); load(); }
     catch (err) { alert(err.message); }
   }
@@ -53,10 +53,10 @@ export default function Quotations() {
   return (
     <div>
       <div className="page-head">
-        <h1>Quotations</h1>
+        <h1>Sales orders</h1>
         <Tooltip text="Price offers for customers. A quote doesn't affect stock. Admins can revise a quote when a customer changes their order — older versions stay in the history. When the customer agrees, convert it into a real sale in one tap." />
         <div className="spacer" />
-        <button className="btn btn-primary" onClick={() => setAdding(true)}>+ New quotation</button>
+        <button className="btn btn-primary" onClick={() => setAdding(true)}>+ New sales order</button>
       </div>
 
       {loading ? (
@@ -67,7 +67,7 @@ export default function Quotations() {
             <div className="big">📝</div>
             <h2 style={{ marginBottom: 6 }}>No quotations yet</h2>
             <p>Create a quote when a customer asks "how much for this list?"</p>
-            <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => setAdding(true)}>+ New quotation</button>
+            <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => setAdding(true)}>+ New sales order</button>
           </div>
         </div>
       ) : (

@@ -12,19 +12,22 @@ import { useCompany } from '../context/CompanyContext';
 import { naira } from '../utils/format';
 import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
+import SearchableSelect from '../components/SearchableSelect';
+import NumberField from '../components/NumberField';
 import AddCustomerModal from './customers/AddCustomerModal';
 import ReturnBySaleModal from './sales/ReturnBySaleModal';
 
 const TYPES = [
   { key: 'cash', label: 'Cash' },
   { key: 'credit', label: 'Credit' },
-  { key: 'reseller', label: 'Reseller' },
+  { key: 'reseller', label: 'Distributor' },
 ];
 
 const PAY_METHODS = [
   { key: 'cash', label: 'Cash' },
-  { key: 'transfer', label: 'Transfer' },
-  { key: 'pos', label: 'POS card' },
+  { key: 'pos', label: 'POS Card (Moniepoint)' },
+  { key: 'transfer_moniepoint', label: 'Transfer - Moniepoint' },
+  { key: 'transfer_zenith', label: 'Transfer - Zenith Bank' },
   { key: 'cheque', label: 'Cheque' },
 ];
 
@@ -69,11 +72,11 @@ export default function Sales() {
     setBranchId(''); setCart([]); setCustomerId(''); setStockMap({}); setDone(null); setSaleType('cash');
   }, [activeId]);
 
-  // Customers for the chosen type
+  // Customers for the chosen type (cash → General customers).
   useEffect(() => {
     setCustomerId('');
-    if (saleType === 'cash') { setCustomers([]); return; }
-    api(`/customers?type=${saleType}`).then(setCustomers).catch(() => {});
+    const type = saleType === 'cash' ? 'general' : saleType;
+    api(`/customers?type=${type}`).then(setCustomers).catch(() => {});
   }, [saleType, activeId]);
 
   // Stock available at the chosen branch
@@ -87,6 +90,17 @@ export default function Sales() {
   }, [branchId]);
 
   useEffect(() => { refreshStock(); }, [refreshStock, activeId]);
+
+  // Warehouse stock (shown as a hint next to the branch stock).
+  const warehouse = branches.find((b) => b.is_warehouse);
+  const [warehouseStock, setWarehouseStock] = useState({});
+  useEffect(() => {
+    if (!warehouse) { setWarehouseStock({}); return; }
+    api(`/stock?branch_id=${warehouse.id}`).then((rows) => {
+      const m = {}; rows.forEach((r) => { m[r.product_id] = r.quantity; });
+      setWarehouseStock(m);
+    }).catch(() => setWarehouseStock({}));
+  }, [warehouse, activeId]);
 
   const productById = useCallback((id) => products.find((p) => String(p.id) === String(id)), [products]);
 
@@ -181,7 +195,7 @@ export default function Sales() {
     setError('');
     if (!branchId) return setError('Choose the branch you are selling from.');
     if (cart.length === 0) return setError('Add at least one item.');
-    if (saleType !== 'cash' && !customerId) return setError('Choose a customer.');
+    if (!customerId) return setError('Choose or add a customer for this sale.');
     setBusy(true);
     try {
       const res = await api('/sales', {
@@ -191,7 +205,7 @@ export default function Sales() {
           branch_id: branchId,
           sale_type: saleType,
           payment_method: paymentMethod,
-          customer_id: saleType === 'cash' ? null : customerId,
+          customer_id: customerId,
           amount_paid: saleType === 'cash' ? undefined : Number(amountPaid) || 0,
           quote_id: quoteId,
           items: cart.map((c) => ({ product_id: c.product_id, sold_as: c.sold_as, pack_size: c.pack_size, quantity: c.quantity, unit_price: c.unit_price })),
@@ -240,7 +254,7 @@ export default function Sales() {
     <div>
       <div className="page-head">
         <h1>New sale</h1>
-        <Tooltip text="Record a sale here. Cash is paid in full now; credit and reseller sales are owed by a customer until they pay." />
+        <Tooltip text="Record a sale here. Cash is paid in full now; credit and distributor sales are owed by a customer until they pay." />
         <div className="spacer" />
         <button className="btn btn-ghost" onClick={() => setReturning(true)}>↩️ Return by invoice</button>
       </div>
@@ -248,18 +262,18 @@ export default function Sales() {
       {error && <div className="banner-error">{error}</div>}
       {fromQuote && (
         <div className="banner-error" style={{ background: '#e8f5ec', borderColor: '#bfe3cd', color: 'var(--green-800)' }}>
-          Converting quotation <b>{fromQuote}</b>. Choose the branch and sale type, then complete it.
+          Converting sales order <b>{fromQuote}</b>. Choose the branch and sale type, then complete it.
         </div>
       )}
 
       <div className="card card-pad" style={{ marginBottom: 16 }}>
         <div className="row2">
           <div className="field">
-            <label>Selling from <Tooltip text="The branch or warehouse the goods leave from. Stock is taken from here." /></label>
+            <label>Selling from <Tooltip text="The branch the goods leave from. Sales don't happen from the warehouse — move stock to a branch first." /></label>
             <select className="input" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
               <option value="">— choose branch —</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}{b.is_warehouse ? ' (Warehouse)' : ''}</option>
+              {branches.filter((b) => !b.is_warehouse).map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
           </div>
@@ -275,19 +289,21 @@ export default function Sales() {
           </div>
         </div>
 
-        {saleType !== 'cash' && (
+        {(
           <div className="field">
             <label>
-              {saleType === 'reseller' ? 'Reseller' : 'Credit customer'}
-              <Tooltip text="The person who owes for this sale. The unpaid amount is added to their balance." />
+              {saleType === 'reseller' ? 'Distributor' : saleType === 'credit' ? 'Credit customer' : 'Customer'}
+              <Tooltip text="Every sale is recorded against a customer. For cash sales, pick a General customer or add a new one (name & phone)." />
             </label>
             <div className="toolbar-row" style={{ marginBottom: 0 }}>
-              <select className="input grow" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-                <option value="">— choose —</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ''}</option>
-                ))}
-              </select>
+              <div className="grow">
+                <SearchableSelect
+                  value={customerId}
+                  onChange={setCustomerId}
+                  placeholder="— choose customer —"
+                  options={customers.map((c) => ({ value: c.id, label: `${c.name}${c.phone ? ` · ${c.phone}` : ''}` }))}
+                />
+              </div>
               <button className="btn btn-ghost" onClick={() => setAddCust(true)}>+ New</button>
             </div>
           </div>
@@ -300,15 +316,24 @@ export default function Sales() {
         <div className="row2">
           <div className="field">
             <label>Product</label>
-            <select className="input" value={item.product_id} onChange={(e) => pickProduct(e.target.value)} disabled={!branchId}>
-              <option value="">— choose —</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.product_code}) · {stockMap[p.id] || 0} in stock
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={item.product_id}
+              onChange={pickProduct}
+              disabled={!branchId}
+              placeholder="— choose product —"
+              options={products.map((p) => ({ value: p.id, label: `${p.name} (${p.product_code}) · ${stockMap[p.id] || 0} in stock` }))}
+            />
             {!branchId && <div className="hint">Choose a branch first to see available stock.</div>}
+            {branchId && item.product_id && (() => {
+              const p = productById(item.product_id);
+              const branchName = (branches.find((b) => String(b.id) === String(branchId)) || {}).name || 'this branch';
+              return (
+                <div className="hint" style={{ marginTop: 6 }}>
+                  In {branchName}: <b>{stockMap[item.product_id] || 0}</b> {p ? p.unit : 'pcs'}
+                  {warehouse && <> · In {warehouse.name}: <b>{warehouseStock[item.product_id] || 0}</b></>}
+                </div>
+              );
+            })()}
             {(() => {
               const p = productById(item.product_id);
               const hasCarton = p && parseInt(p.qty_per_carton, 10) > 0;
@@ -323,17 +348,17 @@ export default function Sales() {
           <div className="row2">
             <div className="field">
               <label>Quantity {item.sold_as === 'carton' ? '(cartons)' : ''}</label>
-              <input className="input" type="number" value={item.quantity} onChange={(e) => onQty(e.target.value)} />
+              <NumberField className="input" allowDecimal={false} value={item.quantity} onChange={onQty} />
             </div>
             <div className="field">
               <label>Price per {item.sold_as === 'carton' ? 'carton' : 'piece'} <Tooltip text="Defaults to the selling price. Editing this or the Total keeps the other in sync." /></label>
-              <input className="input" type="number" value={item.unit_price} onChange={(e) => onUnitPrice(e.target.value)} />
+              <NumberField className="input" value={item.unit_price} onChange={onUnitPrice} />
             </div>
           </div>
         </div>
         <div className="field" style={{ maxWidth: 260 }}>
           <label>Total for this line <Tooltip text="Enter the total and the price per unit is worked out automatically — or the other way round." /></label>
-          <input className="input" type="number" value={item.total} onChange={(e) => onTotal(e.target.value)} placeholder="0" />
+          <NumberField className="input" value={item.total} onChange={onTotal} placeholder="0" />
         </div>
         <button className="btn btn-ghost" onClick={addItem}>+ Add to sale</button>
       </div>
@@ -385,7 +410,7 @@ export default function Sales() {
 
       {addCust && (
         <AddCustomerModal
-          type={saleType}
+          type={saleType === 'cash' ? 'general' : saleType}
           onClose={() => setAddCust(false)}
           onSaved={(c) => { setCustomers((list) => [...list, c]); setCustomerId(String(c.id)); }}
         />

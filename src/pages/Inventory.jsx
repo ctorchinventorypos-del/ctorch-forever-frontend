@@ -20,7 +20,8 @@ import CategoriesModal from './inventory/CategoriesModal';
 
 export default function Inventory() {
   const { activeId } = useCompany();
-  const { isAdmin } = useAuth();
+  const { isAdmin, role } = useAuth();
+  const canStock = isAdmin || role === 'warehouse';
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -111,9 +112,9 @@ export default function Inventory() {
         <Tooltip text="Everything you stock for this company. Add products, restock by code, and move stock between the warehouse and your branches." />
         <div className="spacer" />
         <button className="btn btn-ghost" onClick={() => setModal('categories')}>Categories</button>
-        <button className="btn btn-ghost" onClick={() => setModal('transfer')}>Transfer</button>
-        <button className="btn btn-ghost" onClick={() => setModal('restock')}>Restock</button>
-        <button className="btn btn-primary" onClick={() => setModal('add')}>+ Add product</button>
+        {canStock && <button className="btn btn-ghost" onClick={() => setModal('transfer')}>Transfer</button>}
+        {canStock && <button className="btn btn-ghost" onClick={() => setModal('restock')}>Restock</button>}
+        {isAdmin && <button className="btn btn-primary" onClick={() => setModal('add')}>+ Add product</button>}
       </div>
 
       <div className="toolbar-row">
@@ -147,7 +148,7 @@ export default function Inventory() {
             <div className="big">📦</div>
             <h2 style={{ marginBottom: 6 }}>No products yet</h2>
             <p>Add your first product to start tracking stock.</p>
-            <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => setModal('add')}>+ Add product</button>
+            {isAdmin && <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => setModal('add')}>+ Add product</button>}
           </div>
         </div>
       ) : (

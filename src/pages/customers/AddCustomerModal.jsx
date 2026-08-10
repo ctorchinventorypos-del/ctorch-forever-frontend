@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { api } from '../../api/client';
+import NumberField from '../../components/NumberField';
 
 export default function AddCustomerModal({ type, onClose, onSaved }) {
   const [form, setForm] = useState({ name: '', phone: '', address: '', opening_balance: '' });
@@ -12,7 +13,7 @@ export default function AddCustomerModal({ type, onClose, onSaved }) {
   const [busy, setBusy] = useState(false);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
-  const label = type === 'reseller' ? 'bulk reseller' : 'credit customer';
+  const label = type === 'reseller' ? 'distributor' : type === 'general' ? 'general customer' : 'credit customer';
 
   async function save() {
     setError('');
@@ -63,11 +64,13 @@ export default function AddCustomerModal({ type, onClose, onSaved }) {
         <label>Address (optional)</label>
         <input className="input" value={form.address} onChange={set('address')} />
       </div>
-      <div className="field">
-        <label>Amount already owed (optional)</label>
-        <input className="input" type="number" value={form.opening_balance} onChange={set('opening_balance')} placeholder="0" />
-        <small className="subtle">If this {label} already owes money, enter it here. Leave 0 if not.</small>
-      </div>
+      {type !== 'general' && (
+        <div className="field">
+          <label>Amount already owed (optional)</label>
+          <NumberField className="input" value={form.opening_balance} onChange={(v)=>setForm({...form,opening_balance:v})} placeholder="0" />
+          <small className="subtle">If this {label} already owes money, enter it here. Leave 0 if not.</small>
+        </div>
+      )}
     </Modal>
   );
 }

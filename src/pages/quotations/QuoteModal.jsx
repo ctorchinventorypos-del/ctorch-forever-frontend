@@ -91,7 +91,7 @@ export default function QuoteModal({ onClose, onSaved, reviseOf }) {
 
   return (
     <Modal
-      title={isRevise ? `Revise quotation ${reviseOf.quote_number}` : 'New quotation'}
+      title={isRevise ? `Revise sales order ${reviseOf.quote_number}` : 'New sales order'}
       wide
       onClose={onClose}
       footer={

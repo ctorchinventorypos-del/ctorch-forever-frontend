@@ -32,7 +32,7 @@ export default function Dashboard() {
   const actions = [
     { ico: '🧾', t: 'New sale', s: 'Record a cash or credit sale', to: '/sales' },
     { ico: '📦', t: 'Add or restock', s: 'Manage products and stock', to: '/inventory' },
-    { ico: '👥', t: 'Customers', s: 'Credit customers & resellers', to: '/customers' },
+    { ico: '👥', t: 'Customers', s: 'Credit customers & distributors', to: '/customers' },
     { ico: '🗂️', t: 'Records', s: 'Sales, payments & returns', to: '/records' },
   ];
 
@@ -64,7 +64,7 @@ export default function Dashboard() {
               {stats && <small className="subtle">{stats.sales_month} sale{stats.sales_month === 1 ? '' : 's'}</small>}
             </div>
             <div className="card stat">
-              <div className="label">Total owed <Tooltip text="Money all customers and resellers currently owe this company." /></div>
+              <div className="label">Total owed <Tooltip text="Money all customers and distributors currently owe this company." /></div>
               <div className="value" style={{ color: 'var(--amber)' }}>{stats ? naira(stats.owed) : '—'}</div>
               {stats && <small className="subtle">{stats.debtors} debtor{stats.debtors === 1 ? '' : 's'}</small>}
             </div>

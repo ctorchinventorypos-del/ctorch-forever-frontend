@@ -6,27 +6,32 @@ import { useState } from 'react';
 import Modal from '../../components/Modal';
 import Tooltip from '../../components/Tooltip';
 import { api } from '../../api/client';
+import SearchableSelect from '../../components/SearchableSelect';
+import NumberField from '../../components/NumberField';
 import { useAuth } from '../../context/AuthContext';
 
 export default function RestockModal({ products, branches, preselect, onClose, onSaved }) {
   const { isAdmin } = useAuth();
   const [productId, setProductId] = useState(preselect || '');
-  const [branchId, setBranchId] = useState('');
   const [qty, setQty] = useState('');
   const [cost, setCost] = useState('');
   const [carton, setCarton] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
+  // All restocks go into the warehouse. Move to a branch afterwards via Transfer.
+  const warehouse = branches.find((b) => b.is_warehouse);
+
   async function save() {
     setError('');
+    if (!warehouse) return setError('No warehouse found for this company.');
     setBusy(true);
     try {
       await api('/stock/restock', {
         method: 'POST',
         body: {
           product_id: productId,
-          branch_id: branchId,
+          branch_id: warehouse.id,
           quantity: Number(qty),
           // Admins can set a new cost price for this batch; others can't.
           ...(isAdmin && cost !== '' ? { cost_price: Number(cost) } : {}),
@@ -59,41 +64,32 @@ export default function RestockModal({ products, branches, preselect, onClose, o
 
       <div className="field">
         <label>Product <Tooltip text="Pick the product to add more of. The amount adds to the current stock — it never creates a duplicate." /></label>
-        <select className="input" value={productId} onChange={(e) => setProductId(e.target.value)}>
-          <option value="">— choose —</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.id}>{p.name} ({p.product_code})</option>
-          ))}
-        </select>
+        <SearchableSelect value={productId} onChange={setProductId} placeholder="— choose product —"
+          options={products.map((p) => ({ value: p.id, label: `${p.name} (${p.product_code})` }))} />
       </div>
 
       <div className="row2">
         <div className="field">
-          <label>Add to <Tooltip text="Which branch or the warehouse the new stock arrives at." /></label>
-          <select className="input" value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-            <option value="">— choose —</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}{b.is_warehouse ? ' (Warehouse)' : ''}</option>
-            ))}
-          </select>
+          <label>Adds to <Tooltip text="New stock always arrives in the warehouse. Use Transfer to move it to a branch." /></label>
+          <input className="input" value={warehouse ? warehouse.name : 'Warehouse'} disabled />
         </div>
         <div className="field">
           <label>Quantity</label>
-          <input className="input" type="number" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="0" />
+          <NumberField className="input" allowDecimal={false} value={qty} onChange={setQty} placeholder="0" />
         </div>
       </div>
 
       {isAdmin && (
         <div className="field">
           <label>New cost price for this batch <Tooltip text="Optional. If you bought this batch at a different cost, enter it here — it updates the product's cost price. Leave blank to keep the current cost. Admins only." /></label>
-          <input className="input" type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="leave blank to keep current" />
+          <NumberField className="input" value={cost} onChange={setCost} placeholder="leave blank to keep current" />
         </div>
       )}
 
       {isAdmin && (
         <div className="field">
           <label>Quantity per carton <Tooltip text="Optional. Set or update how many pieces are in a carton. Leave blank to keep current. Admins only." /></label>
-          <input className="input" type="number" value={carton} onChange={(e) => setCarton(e.target.value)} placeholder="leave blank to keep current" />
+          <NumberField className="input" allowDecimal={false} value={carton} onChange={setCarton} placeholder="leave blank to keep current" />
         </div>
       )}
     </Modal>

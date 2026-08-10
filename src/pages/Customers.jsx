@@ -13,7 +13,7 @@ import CustomerDetailModal from './customers/CustomerDetailModal';
 
 export default function Customers() {
   const { activeId } = useCompany();
-  const [tab, setTab] = useState('credit'); // 'credit' | 'reseller'
+  const [tab, setTab] = useState('general'); // 'general' | 'credit' | 'reseller'
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -35,20 +35,21 @@ export default function Customers() {
     (r) => !term || r.name.toLowerCase().includes(term) || (r.phone || '').includes(term)
   );
 
-  const label = tab === 'reseller' ? 'bulk reseller' : 'credit customer';
+  const label = tab === 'reseller' ? 'distributor' : tab === 'general' ? 'general customer' : 'credit customer';
 
   return (
     <div>
       <div className="page-head">
         <h1>Customers</h1>
-        <Tooltip text="Credit customers buy and pay later. Bulk resellers take goods on credit to resell. Each one's balance is what they still owe." />
+        <Tooltip text="General customers are walk-in cash buyers. Credit customers buy and pay later. Distributors take goods on credit to resell." />
         <div className="spacer" />
         <button className="btn btn-primary" onClick={() => setAdding(true)}>+ Add {label}</button>
       </div>
 
       <div className="tabs">
-        <button className={tab === 'credit' ? 'on' : ''} onClick={() => setTab('credit')}>Credit customers</button>
-        <button className={tab === 'reseller' ? 'on' : ''} onClick={() => setTab('reseller')}>Bulk resellers</button>
+        <button className={tab === 'general' ? 'on' : ''} onClick={() => setTab('general')}>General</button>
+        <button className={tab === 'credit' ? 'on' : ''} onClick={() => setTab('credit')}>Credit</button>
+        <button className={tab === 'reseller' ? 'on' : ''} onClick={() => setTab('reseller')}>Distributors</button>
       </div>
 
       <div className="toolbar-row">

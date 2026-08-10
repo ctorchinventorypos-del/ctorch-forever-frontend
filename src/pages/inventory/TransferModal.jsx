@@ -8,6 +8,8 @@ import { useState } from 'react';
 import Modal from '../../components/Modal';
 import Tooltip from '../../components/Tooltip';
 import { api } from '../../api/client';
+import SearchableSelect from '../../components/SearchableSelect';
+import NumberField from '../../components/NumberField';
 
 export default function TransferModal({ products, branches, preselect, onClose, onSaved }) {
   const [fromId, setFromId] = useState('');
@@ -92,16 +94,15 @@ export default function TransferModal({ products, branches, preselect, onClose, 
         <div className="row2" key={i} style={{ alignItems: 'end' }}>
           <div className="field">
             <label>Product</label>
-            <select className="input" value={l.product_id} onChange={setLine(i, 'product_id')}>
-              <option value="">— choose —</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} ({p.product_code})</option>
-              ))}
-            </select>
+            <SearchableSelect value={l.product_id}
+              onChange={(v) => setLine(i, 'product_id')({ target: { value: v } })}
+              placeholder="— choose product —"
+              options={products.map((p) => ({ value: p.id, label: `${p.name} (${p.product_code})` }))} />
           </div>
           <div className="field">
             <label>Quantity {lines.length > 1 && <button className="linkbtn" style={{ color: 'var(--clay)', float: 'right' }} onClick={() => removeLine(i)}>Remove</button>}</label>
-            <input className="input" type="number" value={l.quantity} onChange={setLine(i, 'quantity')} placeholder="0" />
+            <NumberField className="input" allowDecimal={false} value={l.quantity}
+              onChange={(v) => setLine(i, 'quantity')({ target: { value: v } })} placeholder="0" />
           </div>
         </div>
       ))}

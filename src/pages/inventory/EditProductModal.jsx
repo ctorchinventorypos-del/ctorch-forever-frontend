@@ -7,6 +7,7 @@ import { useState } from 'react';
 import Modal from '../../components/Modal';
 import Tooltip from '../../components/Tooltip';
 import { api } from '../../api/client';
+import NumberField from '../../components/NumberField';
 import { useAuth } from '../../context/AuthContext';
 
 export default function EditProductModal({ product, categories, onClose, onSaved }) {
@@ -123,17 +124,17 @@ export default function EditProductModal({ product, categories, onClose, onSaved
       {isAdmin && (
       <div className="field">
         <label>Cost price <Tooltip text="Only admins can see or change the cost price." /></label>
-        <input className="input" type="number" value={form.cost_price} onChange={set('cost_price')} />
+        <NumberField className="input" value={form.cost_price} onChange={(v)=>setForm({...form,cost_price:v})} />
       </div>
       )}
       <div className="field">
         <label>Quantity per carton <Tooltip text="Pieces in one carton. Only admins can change this." /></label>
-        <input className="input" type="number" value={form.qty_per_carton} onChange={set('qty_per_carton')} disabled={!isAdmin} placeholder="not set" />
+        <NumberField className="input" allowDecimal={false} value={form.qty_per_carton} onChange={(v)=>setForm({...form,qty_per_carton:v})} disabled={!isAdmin} placeholder="not set" />
       </div>
 
       <div className="field">
         <label>Low-stock level <Tooltip text="When total stock falls to this number or below, the product is flagged as low on the dashboard and inventory report." /></label>
-        <input className="input" type="number" value={form.reorder_level} onChange={set('reorder_level')} />
+        <NumberField className="input" allowDecimal={false} value={form.reorder_level} onChange={(v)=>setForm({...form,reorder_level:v})} />
       </div>
 
       <div className="field">
