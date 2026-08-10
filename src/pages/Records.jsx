@@ -16,7 +16,7 @@ const TYPES = [
   { key: 'reseller_sales',   label: 'Goods to distributors', path: '/sales?sale_type=reseller',      kind: 'sale' },
   { key: 'credit_payments',  label: 'Credit payments',    path: '/payments?customer_type=credit', kind: 'payment' },
   { key: 'reseller_payments',label: 'Distributor payments',  path: '/payments?customer_type=reseller', kind: 'payment' },
-  { key: 'returns',          label: 'Returns',            path: '/returns',                       kind: 'return' },
+  { key: 'returns',          label: 'Returns',            path: '/returns/customer',              kind: 'return' },
   { key: 'stock_changes',    label: 'Stock changes',      path: '/stock/movements',               kind: 'stock' },
   { key: 'products_added',   label: 'Products added',     path: '/products?include_inactive=1',   kind: 'product' },
 ];
@@ -146,17 +146,19 @@ export default function Records() {
             {cfg.kind === 'return' && (
               <>
                 <thead>
-                  <tr><th>Date</th><th>Invoice</th><th>Product</th><th className="num">Qty</th><th className="num">Refund</th><th>Back to</th></tr>
+                  <tr><th>Date</th><th>Return No.</th><th>Customer</th><th>Back to</th><th className="num">Value</th><th></th></tr>
                 </thead>
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.id}>
                       <td>{fmtDate(r.created_at)}</td>
-                      <td><span className="code">{r.invoice_number}</span></td>
-                      <td>{r.product_name}</td>
-                      <td className="num">{r.quantity}</td>
-                      <td className="num">{naira(r.refund_amount)}</td>
-                      <td className="subtle">{r.returned_to}</td>
+                      <td><span className="code">{r.return_number}</span></td>
+                      <td>{r.customer_name}</td>
+                      <td className="subtle">{r.branch_name}</td>
+                      <td className="num">{naira(r.total_amount)}</td>
+                      <td className="num">
+                        <button className="linkbtn" onClick={() => window.open(`/return-invoice.html?id=${r.id}&copy=customer`, '_blank')}>Print</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

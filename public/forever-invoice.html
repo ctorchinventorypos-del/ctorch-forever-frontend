@@ -163,7 +163,7 @@
 
   <div class="toolbar">
     <label style="margin-right:14px;font-size:14px;cursor:pointer"><input type="checkbox" id="togglePrice" checked /> Show unit price</label>
-    <label style="margin-right:14px;font-size:14px">Size <select id="sizeSel" style="font-size:14px;padding:2px 6px"><option value="A4">A4</option><option value="A5">A5</option><option value="thermal">Thermal 80mm</option></select></label><button onclick="window.print()">Print this invoice</button>
+    <label style="margin-right:14px;font-size:14px">Size <select id="sizeSel" style="font-size:14px;padding:2px 6px"><option value="A4">A4</option><option value="A5">A5</option><option value="thermal">Thermal 80mm</option></select></label><label style="margin-right:14px;font-size:14px">Copy <select id="copySel" style="font-size:14px;padding:2px 6px"><option value="customer">Customer</option><option value="plaza">Plaza</option><option value="warehouse">Warehouse</option></select></label><button onclick="window.print()">Print this invoice</button>
   </div>
 
   <div class="invoice">
@@ -420,6 +420,19 @@
       });
     } else { applyInvoiceSize(saved); }
   })();
+
+  (function(){
+    var params = new URLSearchParams(location.search);
+    var copy = params.get("copy") || "customer";
+    function label(c){ return c==="plaza" ? "PLAZA COPY" : c==="warehouse" ? "WAREHOUSE COPY" : "CUSTOMER COPY"; }
+    function apply(c){
+      var b=document.querySelector(".cash, .cashbanner");
+      if(b){ var base=b.getAttribute("data-base")||b.textContent; b.setAttribute("data-base",base); b.textContent = base + "  \u2014  " + label(c); }
+    }
+    var sel=document.getElementById("copySel");
+    if(sel){ sel.value=copy; apply(copy); sel.addEventListener("change",function(e){ apply(e.target.value); }); }
+  })();
+
 </script>
 </body>
 </html>

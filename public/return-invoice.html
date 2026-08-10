@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Return Invoice</title>
+<style id="print-size"></style>
+<style>
+  *{box-sizing:border-box;} html,body{margin:0;padding:0;background:#f4f4f4;}
+  body{font-family:"Segoe UI",Tahoma,sans-serif;color:#111;}
+  .sheet{width:640px;max-width:96%;margin:16px auto;background:#fff;padding:26px 30px;border:2px solid #1f7a44;}
+  .center{text-align:center;}
+  .co{font-size:23px;font-weight:800;color:#1f7a44;letter-spacing:.5px;}
+  .doc{font-size:15px;font-weight:700;letter-spacing:2px;margin-top:2px;}
+  .copy{display:inline-block;margin-top:6px;border:1.5px solid #1f7a44;color:#1f7a44;border-radius:5px;padding:2px 10px;font-size:12px;font-weight:700;letter-spacing:1px;}
+  .meta{display:flex;justify-content:space-between;margin:16px 0;font-size:13px;gap:20px;}
+  .meta b{font-weight:600;}
+  table{width:100%;border-collapse:collapse;margin-top:6px;}
+  th{background:#1f7a44;color:#fff;font-size:12px;text-align:left;padding:7px 8px;}
+  th.num,td.num{text-align:right;}
+  td{padding:7px 8px;border-bottom:1px solid #e4e4e4;font-size:13px;}
+  tfoot td{font-weight:800;font-size:15px;border-top:2px solid #1f7a44;}
+  .foot{margin-top:20px;font-size:11px;color:#555;text-align:center;}
+  .sign{display:flex;justify-content:space-between;margin-top:36px;font-size:12px;color:#444;}
+  .sign div{border-top:1px solid #999;padding-top:4px;width:44%;text-align:center;}
+  .toolbar{text-align:center;margin:16px;}
+  .toolbar select,.toolbar button{font-size:14px;padding:7px 12px;margin:0 4px;border-radius:6px;}
+  .toolbar button{background:#1f7a44;color:#fff;border:0;cursor:pointer;}
+  @media print{ body{background:#fff;} .noprint{display:none!important;} .sheet{margin:0;border-width:2px;} }
+</style>
+</head>
+<body>
+  <div class="sheet" id="sheet">
+    <div class="center">
+      <div class="co" id="co">…</div>
+      <div class="doc">RETURN INVOICE</div>
+      <div class="copy" id="copy">CUSTOMER COPY</div>
+    </div>
+    <div class="meta">
+      <div>
+        <div><b>Return No:</b> <span id="rno"></span></div>
+        <div><b>Customer:</b> <span id="cust"></span></div>
+      </div>
+      <div style="text-align:right">
+        <div><b>Date:</b> <span id="date"></span></div>
+        <div><b>Returned to:</b> <span id="branch"></span></div>
+        <div><b>Processed by:</b> <span id="by"></span></div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>#</th><th>Product</th><th class="num">Qty</th><th class="num">Unit Price</th><th class="num">Amount</th></tr></thead>
+      <tbody id="rows"></tbody>
+      <tfoot><tr><td colspan="4" class="num">TOTAL RETURNED</td><td class="num" id="total"></td></tr></tfoot>
+    </table>
+    <div id="note" class="foot" style="text-align:left"></div>
+    <div class="sign"><div>Received by</div><div>Authorised by</div></div>
+    <div class="foot">Goods returned in acceptable condition. This document confirms the return above.</div>
+  </div>
+
+  <div class="toolbar noprint">
+    <label>Copy
+      <select id="copySel"><option value="customer">Customer</option><option value="plaza">Plaza</option><option value="warehouse">Warehouse</option></select>
+    </label>
+    <label>Size
+      <select id="sizeSel"><option value="A4">A4</option><option value="A5">A5</option><option value="thermal">Thermal 80mm</option></select>
+    </label>
+    <button onclick="window.print()">🖨️ Print</button>
+  </div>
+
+<script>
+  var params = new URLSearchParams(location.search);
+  var id = params.get("id");
+  var apiBase = localStorage.getItem("apiBase");
+  var token = localStorage.getItem("token");
+  var companyId = localStorage.getItem("companyId");
+  var naira = function(n){ return "\u20a6" + Number(n||0).toLocaleString("en-NG",{minimumFractionDigits:2}); };
+  function esc(t){ return String(t==null?"":t).replace(/[&<>"\x27]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\x27":"&#39;"}[c];}); }
+
+  function applySize(sz){
+    var css="";
+    if(sz==="A4"){ css="@media print{ @page{ size:A4 portrait; margin:10mm;} .sheet{zoom:1;} }"; }
+    else if(sz==="thermal"){ css="@media print{ @page{ size:80mm auto; margin:2mm;} .sheet{zoom:0.42; border-width:1px;} }"; }
+    else { css="@media print{ @page{ size:A5 portrait; margin:7mm;} .sheet{zoom:0.7;} }"; }
+    document.getElementById("print-size").innerHTML=css;
+  }
+  function applyCopy(c){
+    var label = c==="plaza" ? "PLAZA COPY" : c==="warehouse" ? "WAREHOUSE COPY" : "CUSTOMER COPY";
+    document.getElementById("copy").textContent = label;
+  }
+
+  (function(){
+    var copy = params.get("copy") || "customer";
+    var size = "A5"; try { size = localStorage.getItem("invoiceSize") || "A5"; } catch(e){}
+    document.getElementById("copySel").value = copy; applyCopy(copy);
+    document.getElementById("sizeSel").value = size; applySize(size);
+    document.getElementById("copySel").addEventListener("change",function(e){ applyCopy(e.target.value); });
+    document.getElementById("sizeSel").addEventListener("change",function(e){ applySize(e.target.value); try{localStorage.setItem("invoiceSize",e.target.value);}catch(err){} });
+  })();
+
+  (async function(){
+    if(!id || !apiBase){ document.getElementById("sheet").innerHTML='<p style="padding:20px">Open this from the app.</p>'; return; }
+    try{
+      var res = await fetch(apiBase + "/returns/customer/" + id, { headers:{ "Authorization":"Bearer "+token, "X-Company-Id":companyId } });
+      if(!res.ok) throw new Error("Could not load this return.");
+      var r = await res.json();
+      document.getElementById("co").textContent = r.company_name || "";
+      document.getElementById("rno").textContent = r.return_number || "";
+      document.getElementById("cust").textContent = r.customer_name || "";
+      document.getElementById("branch").textContent = r.branch_name || "";
+      document.getElementById("by").textContent = r.processed_by || "";
+      document.getElementById("date").textContent = new Date(r.created_at).toLocaleString("en-NG",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+      if(r.note){ document.getElementById("note").innerHTML = "<b>Note:</b> " + esc(r.note); }
+      var tb=document.getElementById("rows"); var i=0;
+      (r.items||[]).forEach(function(it){
+        i++; var tr=document.createElement("tr");
+        tr.innerHTML='<td>'+i+'</td><td>'+esc(it.name)+' <small style="color:#888">('+esc(it.product_code)+')</small></td>'+
+          '<td class="num">'+it.quantity+'</td><td class="num">'+naira(it.unit_price)+'</td><td class="num">'+naira(it.subtotal)+'</td>';
+        tb.appendChild(tr);
+      });
+      document.getElementById("total").textContent = naira(r.total_amount);
+      setTimeout(function(){ window.print(); }, 400);
+    }catch(e){ document.getElementById("sheet").innerHTML='<p style="padding:20px">'+e.message+'</p>'; }
+  })();
+</script>
+</body>
+</html>

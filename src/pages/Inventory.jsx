@@ -112,6 +112,8 @@ export default function Inventory() {
         <Tooltip text="Everything you stock for this company. Add products, restock by code, and move stock between the warehouse and your branches." />
         <div className="spacer" />
         <button className="btn btn-ghost" onClick={() => setModal('categories')}>Categories</button>
+        <button className="btn btn-ghost" onClick={() => window.open('/inventory-print.html', '_blank')}>🖨️ Print inventory</button>
+        {canStock && <button className="btn btn-ghost" onClick={() => window.open('/restocks-print.html', '_blank')}>🖨️ Restocks</button>}
         {canStock && <button className="btn btn-ghost" onClick={() => setModal('transfer')}>Transfer</button>}
         {canStock && <button className="btn btn-ghost" onClick={() => setModal('restock')}>Restock</button>}
         {isAdmin && <button className="btn btn-primary" onClick={() => setModal('add')}>+ Add product</button>}

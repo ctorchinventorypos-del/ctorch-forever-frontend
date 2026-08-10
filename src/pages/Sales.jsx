@@ -15,7 +15,7 @@ import Spinner from '../components/Spinner';
 import SearchableSelect from '../components/SearchableSelect';
 import NumberField from '../components/NumberField';
 import AddCustomerModal from './customers/AddCustomerModal';
-import ReturnBySaleModal from './sales/ReturnBySaleModal';
+import ReturnModal from './sales/ReturnModal';
 
 const TYPES = [
   { key: 'cash', label: 'Cash' },
@@ -256,7 +256,7 @@ export default function Sales() {
         <h1>New sale</h1>
         <Tooltip text="Record a sale here. Cash is paid in full now; credit and distributor sales are owed by a customer until they pay." />
         <div className="spacer" />
-        <button className="btn btn-ghost" onClick={() => setReturning(true)}>↩️ Return by invoice</button>
+        <button className="btn btn-ghost" onClick={() => setReturning(true)}>↩️ Return</button>
       </div>
 
       {error && <div className="banner-error">{error}</div>}
@@ -406,7 +406,7 @@ export default function Sales() {
         </div>
       )}
 
-      {returning && <ReturnBySaleModal onClose={() => setReturning(false)} onSaved={refreshStock} />}
+      {returning && <ReturnModal onClose={() => setReturning(false)} onSaved={refreshStock} />}
 
       {addCust && (
         <AddCustomerModal
