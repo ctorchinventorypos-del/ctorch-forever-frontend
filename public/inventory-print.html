@@ -1,23 +1,29 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Inventory list</title>
+<title>Inventory list — detailed</title>
 <style>
   *{box-sizing:border-box;} body{font-family:"Segoe UI",Tahoma,sans-serif;color:#111;margin:0;background:#f4f4f4;}
-  .sheet{width:900px;max-width:97%;margin:14px auto;background:#fff;padding:24px 26px;}
+  .sheet{width:1000px;max-width:98%;margin:14px auto;background:#fff;padding:24px 26px;}
   h1{color:#1f7a44;margin:0 0 2px;font-size:22px;} .sub{color:#666;font-size:13px;margin-bottom:14px;}
-  table{width:100%;border-collapse:collapse;} th{background:#1f7a44;color:#fff;text-align:left;padding:6px 8px;font-size:12px;}
-  th.num,td.num{text-align:right;} td{padding:6px 8px;border-bottom:1px solid #e6e6e6;font-size:12.5px;}
+  table{width:100%;border-collapse:collapse;} th{background:#1f7a44;color:#fff;text-align:left;padding:6px 8px;font-size:11.5px;}
+  th.num,td.num{text-align:right;} td{padding:5px 8px;border-bottom:1px solid #e6e6e6;font-size:12px;}
+  th.wh,td.wh{background:#eef6f0;} td.wh{color:#155;}
   .cat{background:#eef6f0;font-weight:700;color:#1f7a44;}
+  .tot{font-weight:700;}
   .low{color:#b9512f;font-weight:700;}
+  tfoot td{border-top:2px solid #1f7a44;font-weight:800;font-size:12.5px;padding:7px 8px;}
   .toolbar{text-align:center;margin:14px;} .toolbar button{background:#1f7a44;color:#fff;border:0;border-radius:6px;padding:9px 18px;font-size:14px;cursor:pointer;}
-  @media print{ body{background:#fff;} .noprint{display:none;} .sheet{margin:0;} @page{ size:A4 portrait; margin:9mm; } }
+  @media print{ body{background:#fff;} .noprint{display:none;} .sheet{margin:0;width:100%;} @page{ size:A4 landscape; margin:8mm; } }
 </style></head><body>
 <div class="sheet" id="sheet">
-  <h1 id="co">Inventory</h1>
-  <div class="sub">Full stock list · <span id="when"></span></div>
-  <table><thead><tr><th>Product</th><th>Code</th><th class="num">Selling price</th><th class="num">In stock</th></tr></thead>
-  <tbody id="rows"></tbody></table>
-  <div class="sub" style="margin-top:12px" id="foot"></div>
+  <h1 id="co">Inventory — detailed by location</h1>
+  <div class="sub">Stock shown per location (not summed) · <span id="when"></span></div>
+  <table>
+    <thead><tr id="head"></tr></thead>
+    <tbody id="rows"></tbody>
+    <tfoot><tr id="foot"></tr></tfoot>
+  </table>
+  <div class="sub" style="margin-top:12px" id="note"></div>
 </div>
 <div class="toolbar noprint"><button onclick="window.print()">🖨️ Print</button></div>
 <script>
@@ -27,24 +33,47 @@
   (async function(){
     if(!apiBase){document.getElementById("sheet").innerHTML="<p style=padding:20px>Open from the app.</p>";return;}
     try{
-      var res=await fetch(apiBase+"/products",{headers:{"Authorization":"Bearer "+token,"X-Company-Id":companyId}});
-      var list=await res.json();
+      var res=await fetch(apiBase+"/reports/inventory-detail",{headers:{"Authorization":"Bearer "+token,"X-Company-Id":companyId}});
+      if(!res.ok) throw new Error("load");
+      var data=await res.json();
+      var branches=data.branches||[], products=data.products||[];
       document.getElementById("when").textContent=new Date().toLocaleString("en-NG",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+
+      // header: Product | Code | Price | [each branch] | Total
+      var head=document.getElementById("head");
+      head.innerHTML='<th>Product</th><th>Code</th><th class="num">Selling price</th>'+
+        branches.map(function(b){ return '<th class="num'+(b.is_warehouse?' wh':'')+'">'+esc(b.name)+(b.is_warehouse?' (WH)':'')+'</th>'; }).join('')+
+        '<th class="num">Total</th>';
+      var colCount = 3 + branches.length + 1;
+
       // group by category
-      var groups={}; list.forEach(function(p){ var k=p.category_name||"Uncategorised"; (groups[k]=groups[k]||[]).push(p); });
-      var tb=document.getElementById("rows"); var totalUnits=0, totalItems=0;
+      var groups={}; products.forEach(function(p){ var k=p.category_name||"Uncategorised"; (groups[k]=groups[k]||[]).push(p); });
+      var tb=document.getElementById("rows");
+      var totalItems=0; var branchTotals={}; var grand=0;
+      branches.forEach(function(b){ branchTotals[b.id]=0; });
+
       Object.keys(groups).sort().forEach(function(cat){
-        var tr=document.createElement("tr"); tr.innerHTML='<td class="cat" colspan="4">'+esc(cat)+'</td>'; tb.appendChild(tr);
+        var tr=document.createElement("tr"); tr.innerHTML='<td class="cat" colspan="'+colCount+'">'+esc(cat)+'</td>'; tb.appendChild(tr);
         groups[cat].forEach(function(p){
-          totalItems++; totalUnits+=Number(p.total_stock||0);
-          var low = p.reorder_level!=null && p.total_stock<=p.reorder_level;
+          totalItems++; grand+=Number(p.total||0);
+          var low = p.reorder_level!=null && p.total<=p.reorder_level;
+          var cells = branches.map(function(b){
+            var q=Number((p.stock&&p.stock[b.id])||0); branchTotals[b.id]+=q;
+            return '<td class="num'+(b.is_warehouse?' wh':'')+'">'+q+'</td>';
+          }).join('');
           var r=document.createElement("tr");
-          r.innerHTML='<td>'+esc(p.name)+'</td><td>'+esc(p.product_code)+'</td><td class="num">'+naira(p.recommended_price)+'</td>'+
-            '<td class="num'+(low?' low':'')+'">'+Number(p.total_stock||0)+' '+esc(p.unit||'')+(low?' ⚠':'')+'</td>';
+          r.innerHTML='<td>'+esc(p.name)+'</td><td>'+esc(p.product_code)+'</td>'+
+            '<td class="num">'+naira(p.recommended_price)+'</td>'+cells+
+            '<td class="num tot'+(low?' low':'')+'">'+Number(p.total||0)+(low?' \u26a0':'')+'</td>';
           tb.appendChild(r);
         });
       });
-      document.getElementById("foot").textContent=totalItems+" products · "+totalUnits.toLocaleString("en-NG")+" units in stock";
+
+      var foot=document.getElementById("foot");
+      foot.innerHTML='<td colspan="3">TOTALS ('+totalItems+' products)</td>'+
+        branches.map(function(b){ return '<td class="num'+(b.is_warehouse?' wh':'')+'">'+branchTotals[b.id].toLocaleString("en-NG")+'</td>'; }).join('')+
+        '<td class="num">'+grand.toLocaleString("en-NG")+'</td>';
+      document.getElementById("note").textContent="⚠ = at or below low-stock level (by total). Warehouse columns are shaded.";
       setTimeout(function(){window.print();},500);
     }catch(e){document.getElementById("sheet").innerHTML="<p style=padding:20px>Could not load inventory.</p>";}
   })();
