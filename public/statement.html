@@ -91,14 +91,15 @@
       // Build chronological entries: a sale owes its total; money paid is a credit.
       var entries = [];
       (d.sales || []).forEach(function(s){
-        entries.push({ date: s.created_at, label: "Invoice " + s.invoice_number, debit: Number(s.total_amount), credit: 0 });
+        entries.push({ date: s.created_at, label: (s.company_code ? "["+s.company_code+"] " : "") + "Invoice " + s.invoice_number, debit: Number(s.total_amount), credit: 0 });
         if(Number(s.amount_paid) > 0){
-          entries.push({ date: s.created_at, label: "Paid at sale" + (s.payment_method ? " ("+s.payment_method+")" : ""), debit: 0, credit: Number(s.amount_paid) });
+          entries.push({ date: s.created_at, label: (s.company_code ? "["+s.company_code+"] " : "") + "Paid at sale" + (s.payment_method ? " ("+s.payment_method+")" : ""), debit: 0, credit: Number(s.amount_paid) });
         }
       });
       (d.payments || []).forEach(function(p){
-        entries.push({ date: p.created_at, label: "Payment" + (p.payment_method ? " ("+p.payment_method+")" : ""), debit: 0, credit: Number(p.amount) });
+        entries.push({ date: p.created_at, label: (p.company_code ? "["+p.company_code+"] " : "") + "Payment" + (p.payment_method ? " ("+p.payment_method+")" : ""), debit: 0, credit: Number(p.amount) });
       });
+      (d.returns || []).forEach(function(r){ entries.push({ date: r.created_at, label: (r.company_code ? "["+r.company_code+"] " : "") + "Return " + (r.return_number||""), debit: 0, credit: Number(r.total_amount) }); });
       entries.sort(function(a,b){ return new Date(a.date) - new Date(b.date); });
 
       // Reconcile: if the transactions don't add up to the current balance

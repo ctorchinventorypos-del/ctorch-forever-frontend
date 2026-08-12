@@ -61,6 +61,7 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
             {isAdmin && <button className="btn btn-ghost" onClick={editBalance}>✏️ Edit balance</button>}
           </div>
           {data.phone && <p className="subtle" style={{ margin: '4px 0 0' }}>📞 {data.phone}</p>}
+          <p className="subtle" style={{ margin: '2px 0 0' }}>Shared customer · balance is the combined debt across both companies.</p>
 
           <div className="sectionhead">Sales</div>
           {data.sales.length === 0 ? (
@@ -69,7 +70,7 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
             data.sales.map((s) => (
               <div className="list-line" key={s.id}>
                 <span className="grow">
-                  <span className="code">{s.invoice_number}</span> · {fmtDate(s.created_at)}
+                  <CoTag code={s.company_code} /> <span className="code">{s.invoice_number}</span> · {fmtDate(s.created_at)}
                 </span>
                 <b>{naira(s.total_amount)}</b>
               </div>
@@ -82,10 +83,22 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
           ) : (
             data.payments.map((p) => (
               <div className="list-line" key={p.id}>
-                <span className="grow">{fmtDate(p.created_at)}{p.payment_method ? ` · ${p.payment_method}` : ''}{p.note ? ` · ${p.note}` : ''}</span>
+                <span className="grow"><CoTag code={p.company_code} /> {fmtDate(p.created_at)}{p.payment_method ? ` · ${p.payment_method}` : ''}{p.note ? ` · ${p.note}` : ''}</span>
                 <b style={{ color: 'var(--green-700)' }}>{naira(p.amount)}</b>
               </div>
             ))
+          )}
+
+          {data.returns && data.returns.length > 0 && (
+            <>
+              <div className="sectionhead">Returns</div>
+              {data.returns.map((r) => (
+                <div className="list-line" key={r.id}>
+                  <span className="grow"><CoTag code={r.company_code} /> <span className="code">{r.return_number}</span> · {fmtDate(r.created_at)}</span>
+                  <b style={{ color: 'var(--clay)' }}>−{naira(r.total_amount)}</b>
+                </div>
+              ))}
+            </>
           )}
 
           {sub === 'payment' && (
@@ -106,5 +119,18 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
         </>
       )}
     </Modal>
+  );
+}
+
+// Small coloured badge showing which company a transaction belongs to.
+function CoTag({ code }) {
+  if (!code) return null;
+  const isCt = String(code).toUpperCase().includes('CT');
+  return (
+    <span style={{
+      display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: 0.3,
+      padding: '1px 6px', borderRadius: 5, verticalAlign: 'middle',
+      background: isCt ? '#eaf6ee' : '#fdf0e7', color: isCt ? '#1f7a44' : '#b9512f',
+    }}>{code}</span>
   );
 }
