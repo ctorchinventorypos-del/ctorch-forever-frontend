@@ -43,7 +43,7 @@ export default function Customers() {
         <h1>Customers</h1>
         <Tooltip text="General customers are walk-in cash buyers. Credit customers buy and pay later. Distributors take goods on credit to resell." />
         <div className="spacer" />
-        <button className="btn btn-primary" onClick={() => setAdding(true)}>+ Add {label}</button>
+        <button title="Add a new customer — general (walk-in), credit, or distributor." className="btn btn-primary" onClick={() => setAdding(true)}>+ Add {label}</button>
       </div>
 
       <div className="tabs">

@@ -304,7 +304,7 @@ export default function Sales() {
                   options={customers.map((c) => ({ value: c.id, label: `${c.name}${c.phone ? ` · ${c.phone}` : ''}` }))}
                 />
               </div>
-              <button className="btn btn-ghost" onClick={() => setAddCust(true)}>+ New</button>
+              <button title="Add a new customer without leaving the sale." className="btn btn-ghost" onClick={() => setAddCust(true)}>+ New</button>
             </div>
           </div>
         )}
