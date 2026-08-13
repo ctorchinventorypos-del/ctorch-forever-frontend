@@ -9,6 +9,7 @@ const links = [
   { to: '/', label: 'Dashboard', ico: '🏠', end: true },
   { to: '/inventory', label: 'Inventory', ico: '📦' },
   { to: '/sales', label: 'Sales', ico: '🧾', hideFor: ['warehouse'] },
+  { to: '/warehouse-sale', label: 'Warehouse sale', ico: '🏭' },
   { to: '/quotations', label: 'Sales orders', ico: '📝' },
   { to: '/customers', label: 'Customers', ico: '👥', hideFor: ['warehouse'] },
   { to: '/debtors', label: 'Who owes me', ico: '💰', hideFor: ['warehouse'] },

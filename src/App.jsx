@@ -13,6 +13,7 @@ import Customers from './pages/Customers';
 import Records from './pages/Records';
 import Reports from './pages/Reports';
 import Account from './pages/Account';
+import WarehouseSale from './pages/WarehouseSale';
 import Debtors from './pages/Debtors';
 import Quotations from './pages/Quotations';
 import Branches from './pages/Branches';
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/inventory" element={<Inventory />} />
         <Route path="/sales" element={<Sales />} />
+        <Route path="/warehouse-sale" element={<WarehouseSale />} />
         <Route path="/quotations" element={<Quotations />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/debtors" element={<Debtors />} />
