@@ -37,7 +37,7 @@ export default function App() {
         <Route path="/customers" element={<Customers />} />
         <Route path="/debtors" element={<Debtors />} />
         <Route path="/records" element={<Records />} />
-        <Route path="/reports" element={<ProtectedRoute denyRoles={['warehouse']}><Reports /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute adminOnly><Reports /></ProtectedRoute>} />
         <Route path="/account" element={<ProtectedRoute adminOnly><Account /></ProtectedRoute>} />
         <Route path="/branches" element={<Branches />} />
         <Route

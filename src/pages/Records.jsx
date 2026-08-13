@@ -6,11 +6,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api/client';
 import { useCompany } from '../context/CompanyContext';
+import { useAuth } from '../context/AuthContext';
 import { naira } from '../utils/format';
 import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
 
-const TYPES = [
+const ALL_TYPES = [
   { key: 'cash_sales',       label: 'Cash sales',         path: '/sales?sale_type=cash',          kind: 'sale' },
   { key: 'credit_sales',     label: 'Credit sales',       path: '/sales?sale_type=credit',        kind: 'sale' },
   { key: 'reseller_sales',   label: 'Goods to distributors', path: '/sales?sale_type=reseller',      kind: 'sale' },
@@ -23,6 +24,9 @@ const TYPES = [
 
 export default function Records() {
   const { activeId, active } = useCompany();
+  const { isAdmin } = useAuth();
+  // Non-admins never see stock changes or products-added records.
+  const TYPES = ALL_TYPES.filter((t) => isAdmin || !['stock_changes', 'products_added'].includes(t.key));
   const [typeKey, setTypeKey] = useState('cash_sales');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');

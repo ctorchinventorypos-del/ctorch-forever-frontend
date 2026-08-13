@@ -13,7 +13,7 @@ const links = [
   { to: '/customers', label: 'Customers', ico: '👥', hideFor: ['warehouse'] },
   { to: '/debtors', label: 'Who owes me', ico: '💰', hideFor: ['warehouse'] },
   { to: '/records', label: 'Records', ico: '🗂️', hideFor: ['warehouse'] },
-  { to: '/reports', label: 'Reports', ico: '📊', hideFor: ['warehouse'] },
+  { to: '/reports', label: 'Reports', ico: '📊', adminOnly: true },
   { to: '/account', label: 'Account', ico: '💵', adminOnly: true },
   { to: '/branches', label: 'Branches', ico: '🏬' },
 ];
