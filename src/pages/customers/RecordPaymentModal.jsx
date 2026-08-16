@@ -15,6 +15,7 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('cash');
   const [note, setNote] = useState('');
+  const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null); // { payment_id, amount, new_balance }
@@ -53,7 +54,7 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
 
       const res = await api('/payments', {
         method: 'POST',
-        body: { customer_id: customer.id, amount: amt, payment_method: method, note: note.trim() || null },
+        body: { customer_id: customer.id, amount: amt, payment_method: method, note: note.trim() || null, created_at: payDate },
       });
       setDone(res);
       onSaved(); // refresh the balance behind the modal
@@ -125,6 +126,10 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
       <div className="field">
         <label>Note (optional)</label>
         <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. part payment" />
+      </div>
+      <div className="field">
+        <label>Payment date</label>
+        <input type="date" className="input" value={payDate} max={new Date().toISOString().slice(0,10)} onChange={(e) => setPayDate(e.target.value)} />
       </div>
     </Modal>
   );

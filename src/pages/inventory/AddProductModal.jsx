@@ -4,7 +4,7 @@
 //  each with its OWN product code and starting quantity — each variation
 //  becomes its own product sharing the base cost/price/category.
 // ============================================================
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../../components/Modal';
 import Tooltip from '../../components/Tooltip';
 import { api } from '../../api/client';
@@ -21,6 +21,15 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
   const [variations, setVariations] = useState([{ label: '', product_code: '', cost_price: '', recommended_price: '', initial_quantity: '' }]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Suggest the next code (last code created + 1). Stays editable.
+  useEffect(() => {
+    let alive = true;
+    api('/products/next-code')
+      .then((r) => { if (alive && r && r.next_code) setForm((f) => (f.product_code ? f : { ...f, product_code: r.next_code })); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -164,6 +173,7 @@ export default function AddProductModal({ categories, branches, onClose, onSaved
         <div className="field">
           <label>Product code <Tooltip text="A short unique code, e.g. LED-001. You type this when restocking so quantities add up." /></label>
           <input className="input" value={form.product_code} onChange={set('product_code')} placeholder="e.g. LED-001" />
+          <div className="hint">Auto-filled to follow your last code — edit it if you want a different one.</div>
           <small className="subtle">New products start at 0 in stock. An admin sets the real quantity afterwards with “Edit stock”.</small>
         </div>
       ) : (

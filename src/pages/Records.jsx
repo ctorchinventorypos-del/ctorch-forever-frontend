@@ -35,6 +35,19 @@ export default function Records() {
 
   const cfg = TYPES.find((t) => t.key === typeKey);
 
+  // Admin: change the date of a past sale / payment / return.
+  const changeDate = async (kind, id, current) => {
+    const cur = current ? new Date(current).toISOString().slice(0, 10) : '';
+    const val = window.prompt('New date (YYYY-MM-DD):', cur);
+    if (!val) return;
+    const ep = kind === 'sale' ? `/sales/${id}/date`
+      : kind === 'payment' ? `/payments/${id}/date`
+      : kind === 'return' ? `/returns/customer/${id}/date` : null;
+    if (!ep) return;
+    try { await api(ep, { method: 'PATCH', body: { date: val } }); load(); }
+    catch (e) { window.alert(e.message); }
+  };
+
   const load = useCallback(() => {
     setLoading(true);
     const sep = cfg.path.includes('?') ? '&' : '?';
@@ -117,7 +130,7 @@ export default function Records() {
                   {rows.map((r) => (
                     <tr key={r.id}>
                       <td><span className="code">{r.invoice_number}</span></td>
-                      <td>{fmtDate(r.created_at)}</td>
+                      <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
                       <td>{r.customer_name || '—'}</td>
                       <td className="subtle">{r.branch_name}</td>
                       <td className="num">{naira(r.total_amount)}</td>
@@ -136,7 +149,7 @@ export default function Records() {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.id}>
-                      <td>{fmtDate(r.created_at)}</td>
+                      <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
                       <td>{r.customer_name}</td>
                       <td className="subtle">{r.received_by || '—'}</td>
                       <td className="num" style={{ color: 'var(--green-700)', fontWeight: 700 }}>{naira(r.amount)}</td>
@@ -155,7 +168,7 @@ export default function Records() {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.id}>
-                      <td>{fmtDate(r.created_at)}</td>
+                      <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
                       <td><span className="code">{r.return_number}</span></td>
                       <td>{r.customer_name}</td>
                       <td className="subtle">{r.branch_name}</td>
@@ -180,7 +193,7 @@ export default function Records() {
                     const where = r.movement_type === 'transfer' ? `${r.from_branch || '—'} → ${r.to_branch || '—'}` : (r.to_branch || r.from_branch || '—');
                     return (
                       <tr key={r.id}>
-                        <td>{fmtDate(r.created_at)}</td>
+                        <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
                         <td>{r.product_name} <span className="subtle">({r.product_code})</span></td>
                         <td><span className="tag tag-store">{labels[r.movement_type] || r.movement_type}</span></td>
                         <td className="num" style={{ color: Number(r.quantity) < 0 ? 'var(--clay)' : 'inherit' }}>{Number(r.quantity) > 0 ? '+' : ''}{r.quantity}</td>
@@ -201,7 +214,7 @@ export default function Records() {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.id} style={r.is_active === false ? { opacity: 0.55 } : null}>
-                      <td>{fmtDate(r.created_at)}</td>
+                      <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
                       <td>{r.name}{r.is_active === false && <span className="tag tag-store" style={{ marginLeft: 6 }}>Deactivated</span>}</td>
                       <td><span className="code">{r.product_code}</span></td>
                       <td className="subtle">{r.category_name || '—'}</td>

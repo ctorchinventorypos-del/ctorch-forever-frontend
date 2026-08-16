@@ -47,6 +47,7 @@ export default function Sales() {
   const [branchId, setBranchId] = useState('');
   const [saleType, setSaleType] = useState('cash');
   const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [actionDate, setActionDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState('');
   const [stockMap, setStockMap] = useState({});      // product_id -> qty at branch
@@ -205,6 +206,7 @@ export default function Sales() {
           branch_id: branchId,
           sale_type: saleType,
           payment_method: paymentMethod,
+          created_at: actionDate,
           customer_id: customerId,
           amount_paid: saleType === 'cash' ? undefined : Number(amountPaid) || 0,
           quote_id: quoteId,
@@ -213,7 +215,7 @@ export default function Sales() {
       });
       setDone(res);
       saleKeyRef.current = newKey(); // next sale = new action
-      setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setQuoteId(null); setPaymentMethod('cash');
+      setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setQuoteId(null); setPaymentMethod('cash'); setActionDate(new Date().toISOString().slice(0,10));
       // refresh availability after the sale
       if (branchId) api(`/stock?branch_id=${branchId}`).then((rows) => {
         const m = {}; rows.forEach((r) => { m[r.product_id] = r.quantity; }); setStockMap(m);
@@ -398,6 +400,11 @@ export default function Sales() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="field">
+            <label>Sale date <Tooltip text="The date of this sale. Defaults to today — change it to record a sale from another day." /></label>
+            <input type="date" className="input" value={actionDate} max={new Date().toISOString().slice(0,10)} onChange={(e) => setActionDate(e.target.value)} style={{ maxWidth: 220 }} />
           </div>
 
           <button className="btn btn-primary btn-block btn-lg" style={{ marginTop: 14 }} onClick={complete} disabled={busy}>

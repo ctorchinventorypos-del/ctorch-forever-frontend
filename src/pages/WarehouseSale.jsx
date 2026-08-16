@@ -35,6 +35,7 @@ export default function WarehouseSale() {
   const [saleType, setSaleType] = useState('cash');
   const [payMethod, setPayMethod] = useState('cash');
   const [customerId, setCustomerId] = useState('');
+  const [actionDate, setActionDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [addCust, setAddCust] = useState(false);
   const [cart, setCart] = useState([]);
   const [item, setItem] = useState({ product_id: '', quantity: '', unit_price: '' });
@@ -87,7 +88,7 @@ export default function WarehouseSale() {
         method: 'POST',
         headers: { 'Idempotency-Key': keyRef.current },
         body: {
-          customer_id: customerId, sale_type: saleType, payment_method: payMethod,
+          customer_id: customerId, sale_type: saleType, payment_method: payMethod, created_at: actionDate,
           items: cart.map((c) => ({ product_id: c.product_id, quantity: c.quantity, unit_price: c.unit_price })),
         },
       });
@@ -146,6 +147,10 @@ export default function WarehouseSale() {
               {PAY_METHODS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
             </select>
           </div>
+        </div>
+        <div className="field">
+          <label>Sale date <Tooltip text="The date this sale happened. Defaults to today; change it to back-date a sale." /></label>
+          <input type="date" className="input" value={actionDate} max={new Date().toISOString().slice(0,10)} onChange={(e) => setActionDate(e.target.value)} style={{ maxWidth: 220 }} />
         </div>
         <div className="field">
           <label>{saleType === 'reseller' ? 'Distributor' : saleType === 'credit' ? 'Credit customer' : 'Customer'} <Tooltip text="Every sale is against a customer. For cash, pick a General customer or add one." /></label>

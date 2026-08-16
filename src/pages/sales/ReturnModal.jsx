@@ -22,6 +22,7 @@ export default function ReturnModal({ onClose, onSaved }) {
   const [customerId, setCustomerId] = useState('');
   const [branchId, setBranchId] = useState('');
   const [note, setNote] = useState('');
+  const [retDate, setRetDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [lines, setLines] = useState([{ product_id: '', quantity: '', unit_price: '' }]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -68,7 +69,7 @@ export default function ReturnModal({ onClose, onSaved }) {
       const res = await api('/returns/customer', {
         method: 'POST',
         headers: { 'Idempotency-Key': keyRef.current },
-        body: { customer_id: customerId, branch_id: branchId, note: note.trim() || null, items },
+        body: { customer_id: customerId, branch_id: branchId, note: note.trim() || null, items, created_at: retDate },
       });
       setDone(res);
       onSaved && onSaved();
@@ -149,6 +150,10 @@ export default function ReturnModal({ onClose, onSaved }) {
       <div className="field" style={{ marginTop: 10 }}>
         <label>Note (optional)</label>
         <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. wrong size, faulty" />
+      </div>
+      <div className="field">
+        <label>Return date</label>
+        <input type="date" className="input" value={retDate} max={new Date().toISOString().slice(0,10)} onChange={(e) => setRetDate(e.target.value)} />
       </div>
     </Modal>
   );
