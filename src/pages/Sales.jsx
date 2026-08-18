@@ -14,6 +14,7 @@ import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
 import SearchableSelect from '../components/SearchableSelect';
 import NumberField from '../components/NumberField';
+import SplitPayment, { emptyPayment, paymentBody } from '../components/SplitPayment';
 import AddCustomerModal from './customers/AddCustomerModal';
 import ReturnModal from './sales/ReturnModal';
 
@@ -46,7 +47,7 @@ export default function Sales() {
   const [products, setProducts] = useState([]);
   const [branchId, setBranchId] = useState('');
   const [saleType, setSaleType] = useState('cash');
-  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [pay, setPay] = useState(emptyPayment());
   const [actionDate, setActionDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState('');
@@ -205,7 +206,7 @@ export default function Sales() {
         body: {
           branch_id: branchId,
           sale_type: saleType,
-          payment_method: paymentMethod,
+          ...paymentBody(pay),
           created_at: actionDate,
           customer_id: customerId,
           amount_paid: saleType === 'cash' ? undefined : Number(amountPaid) || 0,
@@ -215,7 +216,7 @@ export default function Sales() {
       });
       setDone(res);
       saleKeyRef.current = newKey(); // next sale = new action
-      setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setQuoteId(null); setPaymentMethod('cash'); setActionDate(new Date().toISOString().slice(0,10));
+      setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setQuoteId(null); setPay(emptyPayment()); setActionDate(new Date().toISOString().slice(0,10));
       // refresh availability after the sale
       if (branchId) api(`/stock?branch_id=${branchId}`).then((rows) => {
         const m = {}; rows.forEach((r) => { m[r.product_id] = r.quantity; }); setStockMap(m);
@@ -393,13 +394,7 @@ export default function Sales() {
               Payment method
               <Tooltip text="How the money came in. Recorded on the sale so you can reconcile cash, transfers and POS separately." />
             </label>
-            <div className="seg">
-              {PAY_METHODS.map((m) => (
-                <button key={m.key} className={paymentMethod === m.key ? 'on' : ''} onClick={() => setPaymentMethod(m.key)}>
-                  {m.label}
-                </button>
-              ))}
-            </div>
+            <SplitPayment amountDue={saleType === 'cash' ? total : (Number(amountPaid) || 0)} value={pay} onChange={setPay} />
           </div>
 
           <div className="field">

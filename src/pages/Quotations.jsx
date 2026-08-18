@@ -107,7 +107,7 @@ export default function Quotations() {
                     {'  '}
                     {Number(q.revision_count) > 1 && <button className="linkbtn" onClick={() => setHistory(q)}>🕘 History</button>}
                     {'  '}
-                    <button className="linkbtn" style={{ color: 'var(--clay)' }} onClick={() => del(q)}>Delete</button>
+                    {isAdmin && <button className="linkbtn" style={{ color: 'var(--clay)' }} onClick={() => del(q)}>Delete</button>}
                   </td>
                 </tr>
               ))}

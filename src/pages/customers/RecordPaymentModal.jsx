@@ -4,6 +4,7 @@
 //  shows the amount paid and the balance remaining.
 // ============================================================
 import { useState } from 'react';
+import SplitPayment, { emptyPayment, paymentBody } from '../../components/SplitPayment';
 import Modal from '../../components/Modal';
 import { api } from '../../api/client';
 import NumberField from '../../components/NumberField';
@@ -13,7 +14,7 @@ import { useCompany } from '../../context/CompanyContext';
 export default function RecordPaymentModal({ customer, onClose, onSaved }) {
   const { active } = useCompany();
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState('cash');
+  const [pay, setPay] = useState(emptyPayment());
   const [note, setNote] = useState('');
   const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [error, setError] = useState('');
@@ -29,7 +30,7 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
     if (customer.customer_type === 'reseller') {
       const ok = window.confirm(
         `This is a payment for a DISTRIBUTOR (${customer.name}).\n\n` +
-        `Amount: ${naira(amt)} (${method}).\n\nPlease confirm this is correct before recording.`
+        `Amount: ${naira(amt)} (${pay.mode === 'split' ? 'split payment' : pay.method}).\n\nPlease confirm this is correct before recording.`
       );
       if (!ok) return;
     }
@@ -54,7 +55,7 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
 
       const res = await api('/payments', {
         method: 'POST',
-        body: { customer_id: customer.id, amount: amt, payment_method: method, note: note.trim() || null, created_at: payDate },
+        body: { customer_id: customer.id, amount: amt, ...paymentBody(pay), note: note.trim() || null, created_at: payDate },
       });
       setDone(res);
       onSaved(); // refresh the balance behind the modal
@@ -117,11 +118,7 @@ export default function RecordPaymentModal({ customer, onClose, onSaved }) {
       </div>
       <div className="field">
         <label>Payment method</label>
-        <div className="seg">
-          {[['cash', 'Cash'], ['pos', 'POS Card (Moniepoint)'], ['transfer_moniepoint', 'Transfer - Moniepoint'], ['transfer_zenith', 'Transfer - Zenith Bank'], ['cheque', 'Cheque']].map(([k, lbl]) => (
-            <button key={k} className={method === k ? 'on' : ''} onClick={() => setMethod(k)}>{lbl}</button>
-          ))}
-        </div>
+        <SplitPayment amountDue={Number(amount) || 0} value={pay} onChange={setPay} />
       </div>
       <div className="field">
         <label>Note (optional)</label>
