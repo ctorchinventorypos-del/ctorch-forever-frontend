@@ -4,23 +4,25 @@
 // ============================================================
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { usePerms } from '../context/PermissionsContext';
 
 const links = [
   { to: '/', label: 'Dashboard', ico: '🏠', end: true },
-  { to: '/inventory', label: 'Inventory', ico: '📦' },
+  { to: '/inventory', label: 'Inventory', ico: '📦', feat: 'inventory.view' },
   { to: '/sales', label: 'Sales', ico: '🧾', hideFor: ['warehouse'] },
-  { to: '/warehouse-sale', label: 'Warehouse sale', ico: '🏭' },
-  { to: '/quotations', label: 'Sales orders', ico: '📝' },
-  { to: '/customers', label: 'Customers', ico: '👥', hideFor: ['warehouse'] },
-  { to: '/debtors', label: 'Who owes me', ico: '💰', hideFor: ['warehouse'] },
-  { to: '/records', label: 'Records', ico: '🗂️', hideFor: ['warehouse'] },
-  { to: '/reports', label: 'Reports', ico: '📊', adminOnly: true },
+  { to: '/warehouse-sale', label: 'Warehouse sale', ico: '🏭', feat: 'sale.warehouse' },
+  { to: '/quotations', label: 'Sales orders', ico: '📝', feat: 'quote.create' },
+  { to: '/customers', label: 'Customers', ico: '👥', feat: 'customer.view' },
+  { to: '/debtors', label: 'Who owes me', ico: '💰', feat: 'debtors.view' },
+  { to: '/records', label: 'Records', ico: '🗂️', feat: 'records.sales' },
+  { to: '/reports', label: 'Reports', ico: '📊', feat: 'reports.open' },
   { to: '/account', label: 'Account', ico: '💵', adminOnly: true },
-  { to: '/branches', label: 'Branches', ico: '🏬' },
+  { to: '/branches', label: 'Branches', ico: '🏬', feat: 'branches.manage' },
 ];
 
 export default function Sidebar({ open, onNavigate }) {
   const { isAdmin, role } = useAuth();
+  const { can } = usePerms();
   return (
     <aside className={`sidebar${open ? ' open' : ''}`}>
       <div className="brand">
@@ -31,7 +33,7 @@ export default function Sidebar({ open, onNavigate }) {
         </div>
       </div>
 
-      {links.filter((l) => (!l.adminOnly || isAdmin) && !(l.hideFor || []).includes(role)).map((l) => (
+      {links.filter((l) => (l.feat ? can(l.feat) : ((!l.adminOnly || isAdmin) && !(l.hideFor || []).includes(role)))).map((l) => (
         <NavLink key={l.to} to={l.to} end={l.end} className="nav-link" onClick={onNavigate}>
           <span className="ico">{l.ico}</span>
           {l.label}
@@ -44,6 +46,10 @@ export default function Sidebar({ open, onNavigate }) {
           <NavLink to="/users" className="nav-link" onClick={onNavigate}>
             <span className="ico">🔑</span>
             Users
+          </NavLink>
+          <NavLink to="/permissions" className="nav-link" onClick={onNavigate}>
+            <span className="ico">🎚️</span>
+            Permissions
           </NavLink>
         </>
       )}

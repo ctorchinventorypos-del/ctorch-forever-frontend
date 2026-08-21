@@ -8,6 +8,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './context/AuthContext';
 import { CompanyProvider } from './context/CompanyContext';
+import { PermissionsProvider } from './context/PermissionsContext';
 import './styles/theme.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -15,7 +16,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <CompanyProvider>
-          <App />
+          <PermissionsProvider>
+            <App />
+          </PermissionsProvider>
         </CompanyProvider>
       </AuthProvider>
     </BrowserRouter>

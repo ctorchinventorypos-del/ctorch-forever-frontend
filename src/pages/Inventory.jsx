@@ -12,6 +12,7 @@ import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import { usePerms } from '../context/PermissionsContext';
 import AddProductModal from './inventory/AddProductModal';
 import EditProductModal from './inventory/EditProductModal';
 import RestockModal from './inventory/RestockModal';
@@ -21,6 +22,7 @@ import CategoriesModal from './inventory/CategoriesModal';
 export default function Inventory() {
   const { activeId } = useCompany();
   const { isAdmin, role } = useAuth();
+  const { can } = usePerms();
   const canStock = isAdmin || role === 'warehouse';
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -111,12 +113,12 @@ export default function Inventory() {
         <h1>Inventory</h1>
         <Tooltip text="Everything you stock for this company. Add products, restock by code, and move stock between the warehouse and your branches." />
         <div className="spacer" />
-        {isAdmin && <button className="btn btn-ghost" title="Add, rename or organise product categories." onClick={() => setModal('categories')}>Categories</button>}
+        {can('category.manage') && <button className="btn btn-ghost" title="Add, rename or organise product categories." onClick={() => setModal('categories')}>Categories</button>}
         <button className="btn btn-ghost" title="Print a full stock list showing quantity in the warehouse and each branch separately." onClick={() => window.open('/inventory-print.html', '_blank')}>🖨️ Print inventory</button>
-        {canStock && <button className="btn btn-ghost" title="Print a log of stock added (restocks) for a date range." onClick={() => window.open('/restocks-print.html', '_blank')}>🖨️ Restocks</button>}
-        {canStock && <button className="btn btn-ghost" title="Move stock from the warehouse to a branch (or between branches)." onClick={() => setModal('transfer')}>Transfer</button>}
-        {canStock && <button className="btn btn-ghost" title="Add newly-arrived stock to the warehouse by product code." onClick={() => setModal('restock')}>Restock</button>}
-        {isAdmin && <button className="btn btn-primary" title="Create a new product with its price, category and starting stock." onClick={() => setModal('add')}>+ Add product</button>}
+        {can('restocks.print') && <button className="btn btn-ghost" title="Print a log of stock added (restocks) for a date range." onClick={() => window.open('/restocks-print.html', '_blank')}>🖨️ Restocks</button>}
+        {can('stock.transfer') && <button className="btn btn-ghost" title="Move stock from the warehouse to a branch (or between branches)." onClick={() => setModal('transfer')}>Transfer</button>}
+        {can('stock.restock') && <button className="btn btn-ghost" title="Add newly-arrived stock to the warehouse by product code." onClick={() => setModal('restock')}>Restock</button>}
+        {can('product.add') && <button className="btn btn-primary" title="Create a new product with its price, category and starting stock." onClick={() => setModal('add')}>+ Add product</button>}
       </div>
 
       <div className="toolbar-row">
@@ -150,7 +152,7 @@ export default function Inventory() {
             <div className="big">📦</div>
             <h2 style={{ marginBottom: 6 }}>No products yet</h2>
             <p>Add your first product to start tracking stock.</p>
-            {isAdmin && <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => setModal('add')}>+ Add product</button>}
+            {can('product.add') && <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => setModal('add')}>+ Add product</button>}
           </div>
         </div>
       ) : (
@@ -163,7 +165,7 @@ export default function Inventory() {
                   <tr>
                     <th>Product</th>
                     <th>Code</th>
-                    {isAdmin && <th className="num">Cost</th>}
+                    {can('inventory.cost.view') && <th className="num">Cost</th>}
                     <th className="num">Selling</th>
                     <th className="num">{viewBranch ? 'At this branch' : 'In stock'}</th>
                     <th></th>
@@ -177,7 +179,7 @@ export default function Inventory() {
                         {p.is_active === false && <span className="tag tag-store" style={{ marginLeft: 8 }}>Deactivated</span>}
                       </td>
                       <td><span className="code">{p.product_code}</span></td>
-                      {isAdmin && <td className="num">{naira(p.cost_price)}</td>}
+                      {can('inventory.cost.view') && <td className="num">{naira(p.cost_price)}</td>}
                       <td className="num">{naira(p.recommended_price)}</td>
                       <td className="num">
                         <button className="stockbadge" onClick={() => setStockOf(p)} title="See where this stock is">
@@ -188,7 +190,7 @@ export default function Inventory() {
                         )}
                       </td>
                       <td className="num">
-                        {isAdmin && <button className="linkbtn" onClick={() => setEditing(p)}>Edit</button>}
+                        {can('product.edit') && <button className="linkbtn" onClick={() => setEditing(p)}>Edit</button>}
                       </td>
                     </tr>
                   ))}
@@ -230,7 +232,7 @@ export default function Inventory() {
                   </span>
                 </span>
                 <b>{b.quantity} {stockOf.unit}</b>
-                {isAdmin && (
+                {can('stock.adjust') && (
                   <button className="linkbtn" style={{ marginLeft: 10 }} onClick={() => editStock(b)}>Edit</button>
                 )}
               </div>

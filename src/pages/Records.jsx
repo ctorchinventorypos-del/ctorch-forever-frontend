@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api/client';
 import { useCompany } from '../context/CompanyContext';
 import { useAuth } from '../context/AuthContext';
+import { usePerms } from '../context/PermissionsContext';
 import { naira } from '../utils/format';
 import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
@@ -25,8 +26,15 @@ const ALL_TYPES = [
 export default function Records() {
   const { activeId, active } = useCompany();
   const { isAdmin } = useAuth();
+  const { can } = usePerms();
   // Non-admins never see stock changes or products-added records.
-  const TYPES = ALL_TYPES.filter((t) => isAdmin || !['stock_changes', 'products_added'].includes(t.key));
+  const featFor = (t) => (
+    t.kind === 'sale' ? 'records.sales'
+    : t.kind === 'payment' ? 'records.payments'
+    : t.kind === 'return' ? 'records.returns'
+    : t.key === 'stock_changes' ? 'records.stock_changes'
+    : t.key === 'products_added' ? 'records.products_added' : null);
+  const TYPES = ALL_TYPES.filter((t) => { const f = featFor(t); return f ? can(f) : true; });
   const [typeKey, setTypeKey] = useState('cash_sales');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
