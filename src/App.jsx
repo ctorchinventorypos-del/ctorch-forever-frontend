@@ -14,6 +14,7 @@ import Records from './pages/Records';
 import Reports from './pages/Reports';
 import Account from './pages/Account';
 import Permissions from './pages/Permissions';
+import Expenses from './pages/Expenses';
 import WarehouseSale from './pages/WarehouseSale';
 import Debtors from './pages/Debtors';
 import Quotations from './pages/Quotations';
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/reports" element={<ProtectedRoute adminOnly><Reports /></ProtectedRoute>} />
         <Route path="/account" element={<ProtectedRoute adminOnly><Account /></ProtectedRoute>} />
         <Route path="/permissions" element={<ProtectedRoute adminOnly><Permissions /></ProtectedRoute>} />
+        <Route path="/expenses" element={<Expenses />} />
         <Route path="/branches" element={<Branches />} />
         <Route
           path="/users"
