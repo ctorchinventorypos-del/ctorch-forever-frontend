@@ -4,6 +4,7 @@
 //  prints one Nature's Breeze invoice. For sales, warehouse & admin.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../api/client';
 import { naira } from '../utils/format';
 import Modal from '../components/Modal';
@@ -44,7 +45,25 @@ export default function WarehouseSale() {
   const [done, setDone] = useState(null);
   const keyRef = useRef(newKey());
 
+  const location = useLocation();
   useEffect(() => { api('/warehouse-sale/inventory').then(setProducts).catch(() => {}); }, []);
+
+  // Pre-fill from a sales order converted as a Warehouse sale.
+  useEffect(() => {
+    const q = location.state && location.state.quote;
+    if (!q || !products.length) return;
+    const lines = [];
+    (q.items || []).forEach((it) => {
+      if (!it.product_id) return;
+      const p = products.find((x) => String(x.id) === String(it.product_id));
+      if (!p) return;
+      const qty = parseInt(it.quantity, 10) || 0;
+      if (qty > 0) lines.push({ product_id: p.id, name: p.name, company_code: p.company_code, quantity: qty, unit_price: Number(it.unit_price) || 0 });
+    });
+    if (lines.length) setCart(lines);
+    window.history.replaceState({}, '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
   useEffect(() => {
     setCustomerId('');
     const type = saleType === 'cash' ? 'general' : saleType;

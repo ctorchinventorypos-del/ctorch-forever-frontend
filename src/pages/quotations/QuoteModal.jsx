@@ -6,6 +6,7 @@
 //  Saving never touches stock — it's just a price offer.
 // ============================================================
 import { useEffect, useState } from 'react';
+import { usePerms } from '../../context/PermissionsContext';
 import Modal from '../../components/Modal';
 import Tooltip from '../../components/Tooltip';
 import { api } from '../../api/client';
@@ -21,8 +22,18 @@ export default function QuoteModal({ onClose, onSaved, reviseOf }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(!isRevise);
+  const [combined, setCombined] = useState(false);
+  const { can } = usePerms();
 
-  useEffect(() => { api('/products').then(setProducts).catch(() => {}); }, []);
+  useEffect(() => {
+    if (combined) {
+      api('/warehouse-sale/inventory')
+        .then((rows) => setProducts(rows.map((r) => ({ id: r.id, name: r.name, product_code: r.product_code, recommended_price: r.recommended_price, company_code: r.company_code }))))
+        .catch(() => {});
+    } else {
+      api('/products').then(setProducts).catch(() => {});
+    }
+  }, [combined]);
 
   // When revising, load the current quote and prefill the form.
   useEffect(() => {
@@ -72,6 +83,7 @@ export default function QuoteModal({ onClose, onSaved, reviseOf }) {
     const body = {
       customer_name: customerName.trim() || null,
       note: note.trim() || null,
+      is_combined: combined,
       items: lines.map((l) => ({ product_id: l.product_id, name: l.name, quantity: l.quantity, unit_price: l.unit_price })),
     };
     try {
@@ -114,6 +126,12 @@ export default function QuoteModal({ onClose, onSaved, reviseOf }) {
         <p className="subtle">Loading quote…</p>
       ) : (
         <>
+          {!isRevise && can('quote.combined') && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontWeight: 500 }}>
+              <input type="checkbox" checked={combined} onChange={(e) => setCombined(e.target.checked)} />
+              Combined sale order <Tooltip text="Put goods from BOTH companies on one order. It isn't tied to a company and shows under both. Best converted to a Warehouse sale." />
+            </label>
+          )}
           <div className="field">
             <label>Quote for <Tooltip text="The customer or contractor this quote is for. Free text — they don't need to be a registered customer." /></label>
             <input className="input" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="e.g. Bright Electricals / walk-in" />
@@ -124,7 +142,7 @@ export default function QuoteModal({ onClose, onSaved, reviseOf }) {
               <label>Product</label>
               <select className="input" value={pick.product_id} onChange={(e) => choose(e.target.value)}>
                 <option value="">— choose —</option>
-                {products.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.product_code})</option>)}
+                {products.map((p) => <option key={p.id} value={p.id}>{p.company_code ? `[${p.company_code}] ` : ""}{p.name} ({p.product_code})</option>)}
               </select>
             </div>
             <div className="row2">

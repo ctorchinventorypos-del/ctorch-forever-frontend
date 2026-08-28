@@ -12,11 +12,12 @@ import { useCompany } from '../context/CompanyContext';
 import { naira } from '../utils/format';
 import Tooltip from '../components/Tooltip';
 import Spinner from '../components/Spinner';
+import Modal from '../components/Modal';
 import QuoteModal from './quotations/QuoteModal';
 import QuoteHistoryModal from './quotations/QuoteHistoryModal';
 
 export default function Quotations() {
-  const { activeId } = useCompany();
+  const { activeId, companies, setCompany } = useCompany();
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
@@ -24,6 +25,7 @@ export default function Quotations() {
   const [adding, setAdding] = useState(false);
   const [revising, setRevising] = useState(null);   // quote being revised
   const [history, setHistory] = useState(null);     // quote whose history we're viewing
+  const [converting, setConverting] = useState(null); // quote awaiting a "where to sell?" choice
 
   const load = useCallback(() => {
     setLoading(true);
@@ -33,15 +35,28 @@ export default function Quotations() {
   useEffect(() => { if (activeId) load(); }, [activeId, load]);
 
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' });
+  const companyByCode = (code) => companies.find((c) => (c.code || '').toUpperCase() === code);
 
-  async function convert(q) {
+  // Step 1: choose which kind of sale this order becomes.
+  const startConvert = (q) => setConverting(q);
+
+  // Step 2: fetch the order and route to the chosen screen, pre-filled.
+  async function routeConvert(kind) {
+    const q = converting;
+    setConverting(null);
     try {
       const full = await api(`/quotations/${q.id}`);
-      // Don't mark converted here — that happens only when the sale is completed.
-      navigate('/sales', { state: { quote: { id: q.id, quote_number: full.quote_number, items: full.items } } });
-    } catch (err) {
-      alert(err.message);
-    }
+      const quote = { id: q.id, quote_number: full.quote_number, items: full.items };
+      if (kind === 'warehouse') {
+        navigate('/warehouse-sale', { state: { quote } });
+        return;
+      }
+      const code = kind === 'ctorch' ? 'CTORCH' : 'FOREVER';
+      const co = companyByCode(code);
+      if (co) setCompany(co.id);
+      const targetBranch = kind === 'ctorch' ? 'CTORCH PLAZA' : 'Forever Plaza';
+      navigate('/sales', { state: { quote, targetBranch } });
+    } catch (err) { alert(err.message); }
   }
 
   async function del(q) {
@@ -87,7 +102,7 @@ export default function Quotations() {
               {rows.map((q) => (
                 <tr key={q.id}>
                   <td>
-                    <span className="code">{q.quote_number}</span>
+                    <span className="code">{q.quote_number}</span>{q.is_combined && <span className="code" style={{ background: '#eef0ff', color: '#3b41a8', marginLeft: 6 }}>Combined</span>}
                     {q.revision > 1 && <span className="tag tag-wh" style={{ marginLeft: 8 }}>Rev {q.revision}</span>}
                   </td>
                   <td>{q.customer_name || '—'}</td>
@@ -103,7 +118,7 @@ export default function Quotations() {
                     {'  '}
                     {q.status === 'open' && isAdmin && <button className="linkbtn" onClick={() => setRevising(q)}>✏️ Revise</button>}
                     {'  '}
-                    {q.status === 'open' && <button className="linkbtn" onClick={() => convert(q)}>➡️ To sale</button>}
+                    {q.status === 'open' && <button className="linkbtn" onClick={() => startConvert(q)}>➡️ To sale</button>}
                     {'  '}
                     {Number(q.revision_count) > 1 && <button className="linkbtn" onClick={() => setHistory(q)}>🕘 History</button>}
                     {'  '}
@@ -119,6 +134,17 @@ export default function Quotations() {
       {adding && <QuoteModal onClose={() => setAdding(false)} onSaved={load} />}
       {revising && <QuoteModal reviseOf={revising} onClose={() => setRevising(null)} onSaved={load} />}
       {history && <QuoteHistoryModal quote={history} onClose={() => setHistory(null)} />}
+      {converting && (
+        <Modal title={`Convert ${converting.quote_number} — where is this sold?`} onClose={() => setConverting(null)}
+          footer={<button className="btn btn-ghost" onClick={() => setConverting(null)}>Cancel</button>}>
+          <p className="subtle" style={{ marginBottom: 12 }}>Choose where this order is being sold from. A warehouse sale can include goods from both companies.</p>
+          <div style={{ display: 'grid', gap: 10 }}>
+            <button className="btn btn-primary" onClick={() => routeConvert('ctorch')}>🏬 CTORCH Plaza sale</button>
+            <button className="btn btn-primary" onClick={() => routeConvert('forever')}>🏬 Forever Plaza sale</button>
+            <button className="btn btn-primary" onClick={() => routeConvert('warehouse')}>🏭 Warehouse sale (both companies)</button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

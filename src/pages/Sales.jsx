@@ -108,6 +108,13 @@ export default function Sales() {
 
   // If we arrived here from "Convert to sale" on a quotation, prefill the cart.
   useEffect(() => {
+    // From a conversion chooser: select the chosen plaza branch.
+    const tb = location.state && location.state.targetBranch;
+    if (tb && branches.length) {
+      const match = branches.find((b) => (b.name || '').toLowerCase() === String(tb).toLowerCase());
+      if (match) setBranchId(String(match.id));
+    }
+
     const q = location.state && location.state.quote;
     if (!q || !products.length) return;
     const lines = [];
