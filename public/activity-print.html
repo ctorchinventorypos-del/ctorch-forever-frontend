@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Activity record</title>
+<style>
+ *{box-sizing:border-box} body{font-family:"Segoe UI",Arial,sans-serif;color:#111;margin:0;padding:22px;}
+ h1{color:#1f7a44;margin:0 0 2px;font-size:20px} .sub{color:#666;font-size:12px;margin-bottom:12px}
+ table{width:100%;border-collapse:collapse} th{background:#1f7a44;color:#fff;text-align:left;padding:5px 7px;font-size:11px}
+ td{padding:4px 7px;border-bottom:1px solid #e6e6e6;font-size:11.5px} .num{text-align:right}
+ .sum{margin:10px 0;font-size:12px} .sum span{display:inline-block;margin-right:16px}
+ .neg{color:#b9512f} @media print{@page{size:A4 landscape;margin:8mm}}
+ .tb{margin-top:6px}
+</style></head><body>
+<h1>Activity record</h1><div class="sub" id="sub"></div>
+<div class="sum" id="sum"></div>
+<table class="tb"><thead><tr><th>When</th><th>Activity</th><th>Ref / detail</th><th>Who</th><th>By</th><th class="num">Amount</th></tr></thead>
+<tbody id="rows"></tbody></table>
+<script>
+ var apiBase=localStorage.getItem("apiBase"),token=localStorage.getItem("token"),companyId=localStorage.getItem("companyId");
+ var q=new URLSearchParams(location.search), from=q.get("from"), to=q.get("to");
+ function naira(n){return n==null?"—":"\u20a6"+Number(n).toLocaleString("en-NG");}
+ function esc(t){return String(t==null?"":t).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+ (async function(){
+   if(!apiBase){document.body.innerHTML="<p>Open from the app.</p>";return;}
+   try{
+     var res=await fetch(apiBase+"/reports/activity?from="+from+"&to="+to,{headers:{"Authorization":"Bearer "+token,"X-Company-Id":companyId}});
+     var d=await res.json();
+     document.getElementById("sub").textContent=(from||"")+" \u2192 "+(to||"")+"  ·  "+(d.items||[]).length+" activities";
+     var sum=""; Object.keys(d.summary||{}).forEach(function(k){var s=d.summary[k];sum+="<span><b>"+esc(k)+"</b>: "+s.count+(s.total?" ("+naira(s.total)+")":"")+"</span>";});
+     document.getElementById("sum").innerHTML=sum;
+     var tb=document.getElementById("rows");
+     (d.items||[]).forEach(function(i){
+       var tr=document.createElement("tr");
+       var dt=new Date(i.created_at).toLocaleString("en-NG",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+       tr.innerHTML='<td>'+dt+'</td><td>'+esc(i.kind)+'</td><td>'+esc(i.ref)+(i.qty!=null?' · '+i.qty+' pcs':'')+'</td><td>'+esc(i.who||'—')+'</td><td>'+esc(i.by_user||'—')+'</td><td class="num'+(i.amount<0?' neg':'')+'">'+naira(i.amount)+'</td>';
+       tb.appendChild(tr);
+     });
+     setTimeout(function(){window.print();},400);
+   }catch(e){document.body.innerHTML="<p>Could not load activity.</p>";}
+ })();
+</script></body></html>

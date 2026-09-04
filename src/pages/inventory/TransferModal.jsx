@@ -86,16 +86,16 @@ export default function TransferModal({ products, branches, preselect, onClose, 
 
       <div className="row2">
         <div className="field">
-          <label>From <Tooltip text="Where the stock leaves from." /></label>
+          <label>From (warehouse) <Tooltip text="Stock is sent from a warehouse. Both companies' warehouses act as one central store." /></label>
           <select className="input" value={fromId} onChange={(e) => setFromId(e.target.value)}>
-            <option value="">— choose —</option>
-            {allBranches.map((b) => (
+            <option value="">— choose warehouse —</option>
+            {allBranches.filter((b) => b.is_warehouse).map((b) => (
               <option key={b.id} value={b.id}>{branchLabel(b)}</option>
             ))}
           </select>
         </div>
         <div className="field">
-          <label>To <Tooltip text="Where the stock arrives. Can be the other company's location too." /></label>
+          <label>To (any branch) <Tooltip text="Where the stock arrives — any plaza/branch of either company." /></label>
           <select className="input" value={toId} onChange={(e) => setToId(e.target.value)}>
             <option value="">— choose —</option>
             {allBranches.map((b) => (

@@ -10,9 +10,11 @@ import { naira } from '../../utils/format';
 import RecordPaymentModal from './RecordPaymentModal';
 import RecordReturnModal from './RecordReturnModal';
 import { useAuth } from '../../context/AuthContext';
+import { usePerms } from '../../context/PermissionsContext';
 
 export default function CustomerDetailModal({ customerId, onClose, onChanged }) {
   const { isAdmin } = useAuth();
+  const { can } = usePerms();
   const [data, setData] = useState(null);
   const [sub, setSub] = useState(null); // 'payment' | 'return'
 
@@ -42,6 +44,15 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
     }
   }
 
+  async function upgrade() {
+    if (!window.confirm(`Upgrade ${data.name} to a distributor? They will be able to buy on distributor terms.`)) return;
+    try {
+      await api(`/customers/${customerId}/upgrade`, { method: 'PATCH' });
+      load();
+      if (onChanged) onChanged();
+    } catch (err) { window.alert(err.message); }
+  }
+
   return (
     <Modal title={data ? data.name : 'Customer'} wide onClose={onClose}>
       {!data ? (
@@ -59,6 +70,7 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
             <button className="btn btn-ghost" onClick={() => setSub('return')}>Record return</button>
             <button className="btn btn-ghost" onClick={() => window.open(`/statement.html?id=${customerId}`, '_blank')}>📄 Statement</button>
             {isAdmin && <button className="btn btn-ghost" onClick={editBalance}>✏️ Edit balance</button>}
+            {can('customer.upgrade') && data.customer_type !== 'reseller' && <button className="btn btn-ghost" onClick={upgrade}>⬆️ Upgrade to distributor</button>}
           </div>
           {data.phone && <p className="subtle" style={{ margin: '4px 0 0' }}>📞 {data.phone}</p>}
           <p className="subtle" style={{ margin: '2px 0 0' }}>Shared customer · balance is the combined debt across both companies.</p>

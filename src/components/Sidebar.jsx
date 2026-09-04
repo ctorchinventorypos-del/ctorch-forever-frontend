@@ -16,6 +16,8 @@ const links = [
   { to: '/debtors', label: 'Who owes me', ico: '💰', feat: 'debtors.view' },
   { to: '/records', label: 'Records', ico: '🗂️', feat: 'records.sales' },
   { to: '/expenses', label: 'Daily expenses', ico: '🧾', feat: 'expense.view' },
+  { to: '/activity', label: 'Activity record', ico: '📋', feat: 'activity.view' },
+  { to: '/transfer-records', label: 'Transfer records', ico: '🔁', feat: 'transfers.records' },
   { to: '/reports', label: 'Reports', ico: '📊', feat: 'reports.open' },
   { to: '/account', label: 'Account', ico: '💵', adminOnly: true },
   { to: '/branches', label: 'Branches', ico: '🏬', feat: 'branches.manage' },

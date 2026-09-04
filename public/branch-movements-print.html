@@ -1,0 +1,35 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Transfer records</title>
+<style>
+ *{box-sizing:border-box} body{font-family:"Segoe UI",Arial,sans-serif;color:#111;margin:0;padding:22px;}
+ h1{color:#1f7a44;margin:0 0 2px;font-size:20px} .sub{color:#666;font-size:12px;margin-bottom:12px}
+ table{width:100%;border-collapse:collapse} th{background:#1f7a44;color:#fff;text-align:left;padding:5px 7px;font-size:11px}
+ td{padding:4px 7px;border-bottom:1px solid #e6e6e6;font-size:11.5px} .num{text-align:right}
+ .in{color:#1f7a44;font-weight:700} .out{color:#b9512f;font-weight:700}
+ @media print{@page{size:A4 landscape;margin:8mm}}
+</style></head><body>
+<h1>Transfer records</h1><div class="sub" id="sub"></div>
+<table><thead><tr><th>When</th><th>In/Out</th><th>Product</th><th>Type</th><th>Other location</th><th class="num">Qty</th><th>By</th></tr></thead>
+<tbody id="rows"></tbody></table>
+<script>
+ var apiBase=localStorage.getItem("apiBase"),token=localStorage.getItem("token"),companyId=localStorage.getItem("companyId");
+ var q=new URLSearchParams(location.search);
+ function esc(t){return String(t==null?"":t).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+ (async function(){
+   if(!apiBase){document.body.innerHTML="<p>Open from the app.</p>";return;}
+   try{
+     var res=await fetch(apiBase+"/stock/branch-movements?"+q.toString(),{headers:{"Authorization":"Bearer "+token,"X-Company-Id":companyId}});
+     var d=await res.json(); var m=d.movements||[];
+     document.getElementById("sub").textContent="In: "+d.total_in+"  ·  Out: "+d.total_out+"  ·  "+m.length+" movements";
+     var tb=document.getElementById("rows");
+     m.forEach(function(r){
+       var dt=new Date(r.created_at).toLocaleString("en-NG",{day:"2-digit",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"});
+       var dir=r.direction==="in"?'<span class="in">IN</span>':'<span class="out">OUT</span>';
+       var other=r.direction==="in"?(r.from_branch||"—"):(r.to_branch||"—");
+       var tr=document.createElement("tr");
+       tr.innerHTML='<td>'+dt+'</td><td>'+dir+'</td><td>'+(r.product_company?'['+esc(r.product_company)+'] ':'')+esc(r.product_name)+'</td><td>'+esc(r.movement_type)+'</td><td>'+esc(other)+'</td><td class="num">'+r.quantity+'</td><td>'+esc(r.done_by||'—')+'</td>';
+       tb.appendChild(tr);
+     });
+     setTimeout(function(){window.print();},400);
+   }catch(e){document.body.innerHTML="<p>Could not load.</p>";}
+ })();
+</script></body></html>

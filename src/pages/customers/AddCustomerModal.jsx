@@ -17,6 +17,9 @@ export default function AddCustomerModal({ type, onClose, onSaved }) {
 
   async function save() {
     setError('');
+    if ((form.name.trim().match(/[A-Za-z]/g) || []).length < 4) {
+      return setError('Enter a proper name with at least 4 letters.');
+    }
     setBusy(true);
     try {
       const created = await api('/customers', {
