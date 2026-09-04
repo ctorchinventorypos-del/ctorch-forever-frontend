@@ -5,6 +5,8 @@
 // ============================================================
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api/client';
+import Modal from '../components/Modal';
+import SearchableSelect from '../components/SearchableSelect';
 import { useCompany } from '../context/CompanyContext';
 import { useAuth } from '../context/AuthContext';
 import { usePerms } from '../context/PermissionsContext';
@@ -44,6 +46,17 @@ export default function Records() {
   const cfg = TYPES.find((t) => t.key === typeKey);
 
   // Admin: change the date of a past sale / payment / return.
+  const [settingCust, setSettingCust] = useState(null);
+  const [custList, setCustList] = useState([]);
+  const [custPick, setCustPick] = useState('');
+  useEffect(() => { if (settingCust) api('/customers').then(setCustList).catch(() => setCustList([])); }, [settingCust]);
+
+  const saveCustomer = async () => {
+    if (!custPick) return;
+    try { await api(`/sales/${settingCust.id}/customer`, { method: 'PATCH', body: { customer_id: custPick } }); setSettingCust(null); setCustPick(''); load(); }
+    catch (e) { window.alert(e.message); }
+  };
+
   const changeDate = async (kind, id, current) => {
     const cur = current ? new Date(current).toISOString().slice(0, 10) : '';
     const val = window.prompt('New date (YYYY-MM-DD):', cur);
@@ -139,7 +152,7 @@ export default function Records() {
                     <tr key={r.id}>
                       <td><span className="code">{r.invoice_number}</span></td>
                       <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
-                      <td>{r.customer_name || '—'}</td>
+                      <td>{r.customer_name || '—'}{can('records.edit_customer') && <button className="linkbtn" title="Set / change the customer on this sale" style={{ marginLeft: 6 }} onClick={() => setSettingCust(r)}>✎</button>}</td>
                       <td className="subtle">{r.branch_name}</td>
                       <td className="num">{naira(r.total_amount)}</td>
                       <td className="num"><button className="linkbtn" onClick={() => reprint(r.id)}>🖨️ Reprint</button></td>
@@ -251,6 +264,15 @@ export default function Records() {
             </tfoot>
           </table>
         </div>
+      )}
+      {settingCust && (
+        <Modal title={`Set customer for ${settingCust.invoice_number}`} onClose={() => { setSettingCust(null); setCustPick(''); }}
+          footer={<><button className="btn btn-ghost" onClick={() => { setSettingCust(null); setCustPick(''); }}>Cancel</button>
+            <button className="btn btn-primary" onClick={saveCustomer} disabled={!custPick}>Save</button></>}>
+          <p className="subtle" style={{ marginBottom: 10 }}>Attribute this sale to a customer. If it was on credit, the balance moves to them.</p>
+          <SearchableSelect value={custPick} onChange={setCustPick} placeholder="— choose customer —"
+            options={custList.map((c) => ({ value: c.id, label: `${c.name}${c.phone ? ' · ' + c.phone : ''}` }))} />
+        </Modal>
       )}
     </div>
   );
