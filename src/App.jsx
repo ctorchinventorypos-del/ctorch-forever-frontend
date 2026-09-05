@@ -18,6 +18,7 @@ import Expenses from './pages/Expenses';
 import Activity from './pages/Activity';
 import TransferRecords from './pages/TransferRecords';
 import StockAsAt from './pages/StockAsAt';
+import StockHistory from './pages/StockHistory';
 import WarehouseSale from './pages/WarehouseSale';
 import Debtors from './pages/Debtors';
 import Quotations from './pages/Quotations';
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/activity" element={<Activity />} />
         <Route path="/transfer-records" element={<TransferRecords />} />
         <Route path="/stock-as-at" element={<StockAsAt />} />
+        <Route path="/stock-history" element={<StockHistory />} />
         <Route path="/branches" element={<Branches />} />
         <Route
           path="/users"

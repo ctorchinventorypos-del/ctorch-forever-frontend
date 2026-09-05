@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { usePerms } from '../context/PermissionsContext';
 import { naira } from '../utils/format';
 import Tooltip from '../components/Tooltip';
+import EditSaleModal from './records/EditSaleModal';
 import Spinner from '../components/Spinner';
 
 const ALL_TYPES = [
@@ -27,7 +28,7 @@ const ALL_TYPES = [
 
 export default function Records() {
   const { activeId, active } = useCompany();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isSuperAdmin } = useAuth();
   const { can } = usePerms();
   // Non-admins never see stock changes or products-added records.
   const featFor = (t) => (
@@ -48,6 +49,7 @@ export default function Records() {
 
   // Admin: change the date of a past sale / payment / return.
   const [settingCust, setSettingCust] = useState(null);
+  const [editingSale, setEditingSale] = useState(null);
   const [custList, setCustList] = useState([]);
   const [custPick, setCustPick] = useState('');
   useEffect(() => { if (settingCust) api('/customers').then(setCustList).catch(() => setCustList([])); }, [settingCust]);
@@ -166,7 +168,7 @@ export default function Records() {
                       <td>{r.customer_name || '—'}{can('records.edit_customer') && <button className="linkbtn" title="Set / change the customer on this sale" style={{ marginLeft: 6 }} onClick={() => setSettingCust(r)}>✎</button>}</td>
                       <td className="subtle">{r.branch_name}</td>
                       <td className="num">{naira(r.total_amount)}</td>
-                      <td className="num"><button className="linkbtn" onClick={() => reprint(r.id)}>🖨️ Reprint</button></td>
+                      <td className="num">{isSuperAdmin && <button className="linkbtn" title="Correct this sale's items (adjusts stock)" style={{ marginRight: 8 }} onClick={() => setEditingSale(r)}>✎ Edit</button>}<button className="linkbtn" onClick={() => reprint(r.id)}>🖨️ Reprint</button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -276,6 +278,7 @@ export default function Records() {
           </table>
         </div>
       )}
+      {editingSale && <EditSaleModal saleId={editingSale.id} onClose={() => setEditingSale(null)} onSaved={load} />}
       {settingCust && (
         <Modal title={`Set customer for ${settingCust.invoice_number}`} onClose={() => { setSettingCust(null); setCustPick(''); }}
           footer={<><button className="btn btn-ghost" onClick={() => { setSettingCust(null); setCustPick(''); }}>Cancel</button>

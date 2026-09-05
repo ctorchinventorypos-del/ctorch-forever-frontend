@@ -19,6 +19,7 @@ const links = [
   { to: '/activity', label: 'Activity record', ico: '📋', feat: 'activity.view' },
   { to: '/transfer-records', label: 'Transfer records', ico: '🔁', feat: 'transfers.records' },
   { to: '/stock-as-at', label: 'Stock as at date', ico: '📅', feat: 'stock.asat' },
+  { to: '/stock-history', label: 'Stock history', ico: '📈', feat: 'stock.history' },
   { to: '/reports', label: 'Reports', ico: '📊', feat: 'reports.open' },
   { to: '/account', label: 'Account', ico: '💵', adminOnly: true },
   { to: '/branches', label: 'Branches', ico: '🏬', feat: 'branches.manage' },
