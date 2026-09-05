@@ -36,6 +36,7 @@ export default function Activity() {
   const [anchor, setAnchor] = useState(() => new Date().toISOString().slice(0, 10));
   const [data, setData] = useState({ items: [], summary: {} });
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
 
   const range = useMemo(() => rangeFor(period, anchor), [period, anchor]);
 
@@ -45,6 +46,8 @@ export default function Activity() {
       .then(setData).catch(() => setData({ items: [], summary: {} }))
       .finally(() => setLoading(false));
   }, [range.from, range.to]);
+
+  const shown = (data.items || []).filter((i) => { const t = search.trim().toLowerCase(); if (!t) return true; return Object.values(i).some((v) => v != null && String(v).toLowerCase().includes(t)); });
 
   const fmt = (d) => new Date(d).toLocaleString('en-NG', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
   const openPrint = () => window.open(`/activity-print.html?from=${range.from}&to=${range.to}`, '_blank');
@@ -62,7 +65,7 @@ export default function Activity() {
             {PERIODS.map(([k, l]) => <button key={k} className={period === k ? 'on' : ''} onClick={() => setPeriod(k)}>{l}</button>)}
           </div>
           <label className="subtle">Date <input type="date" className="input" value={anchor} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setAnchor(e.target.value)} /></label>
-          <span className="grow" />
+          <input className="input grow" style={{ minWidth: 160 }} placeholder="🔎 Search activities…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <button className="btn btn-ghost" onClick={openPrint}>🖨️ Print</button>
         </div>
         <p className="subtle" style={{ margin: '6px 0 0' }}>{range.from} → {range.to}</p>
@@ -81,13 +84,13 @@ export default function Activity() {
       )}
 
       <div className="card card-pad">
-        <h2 style={{ marginBottom: 10 }}>{loading ? 'Loading…' : `${data.items.length} activities`}</h2>
-        {data.items.length === 0 && !loading ? <p className="subtle">No activity in this period.</p> : (
+        <h2 style={{ marginBottom: 10 }}>{loading ? 'Loading…' : `${shown.length} activities`}</h2>
+        {shown.length === 0 && !loading ? <p className="subtle">No activity{search ? ' matches your search' : ' in this period'}.</p> : (
           <div className="table-wrap">
             <table className="t">
               <thead><tr><th>When</th><th>Activity</th><th>Ref / detail</th><th>Who</th><th>By</th><th className="num">Amount</th></tr></thead>
               <tbody>
-                {data.items.map((i, idx) => (
+                {shown.map((i, idx) => (
                   <tr key={idx}>
                     <td>{fmt(i.created_at)}</td>
                     <td><span className="code">{i.kind}</span></td>

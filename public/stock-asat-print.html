@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Stock as at date</title>
+<style>
+ *{box-sizing:border-box} body{font-family:"Segoe UI",Arial,sans-serif;color:#111;margin:0;padding:22px}
+ h1{color:#1f7a44;margin:0 0 2px;font-size:20px} .sub{color:#444;font-size:13px;margin-bottom:12px}
+ table{width:100%;border-collapse:collapse} th{background:#1f7a44;color:#fff;text-align:left;padding:5px 8px;font-size:11.5px}
+ td{padding:4px 8px;border-bottom:1px solid #e6e6e6;font-size:12px} .num{text-align:right}
+ .cat{background:#eef6f0;font-weight:700;color:#1f7a44} tfoot td{border-top:2px solid #1f7a44;font-weight:800}
+ @media print{@page{size:A4 portrait;margin:10mm}}
+</style></head><body>
+<h1>Stock as at date</h1><div class="sub" id="sub"></div>
+<table><thead><tr><th>Product</th><th>Code</th><th class="num">Quantity</th></tr></thead>
+<tbody id="rows"></tbody><tfoot><tr><td colspan="2">TOTAL UNITS</td><td class="num" id="tot"></td></tr></tfoot></table>
+<script>
+ var apiBase=localStorage.getItem("apiBase"),token=localStorage.getItem("token"),companyId=localStorage.getItem("companyId");
+ var q=new URLSearchParams(location.search);
+ function esc(t){return String(t==null?"":t).replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+ (async function(){
+   if(!apiBase){document.body.innerHTML="<p>Open from the app.</p>";return;}
+   try{
+     var res=await fetch(apiBase+"/reports/stock-as-at?"+q.toString(),{headers:{"Authorization":"Bearer "+token,"X-Company-Id":companyId}});
+     var d=await res.json();
+     var dt=new Date(d.date+"T12:00:00").toLocaleDateString("en-NG",{day:"2-digit",month:"long",year:"numeric"});
+     document.getElementById("sub").textContent=d.branch.company_code+" · "+d.branch.name+"  —  as at "+dt+"  ·  "+d.products.length+" products";
+     var groups={}; d.products.forEach(function(p){(groups[p.category_name]=groups[p.category_name]||[]).push(p);});
+     var tb=document.getElementById("rows");
+     Object.keys(groups).sort().forEach(function(cat){
+       var tr=document.createElement("tr"); tr.innerHTML='<td class="cat" colspan="3">'+esc(cat)+'</td>'; tb.appendChild(tr);
+       groups[cat].forEach(function(p){
+         var r=document.createElement("tr");
+         r.innerHTML='<td>'+(p.owner_code && p.owner_code!==d.branch.company_code?'['+esc(p.owner_code)+'] ':'')+esc(p.name)+'</td><td>'+esc(p.product_code)+'</td><td class="num">'+p.quantity+'</td>';
+         tb.appendChild(r);
+       });
+     });
+     document.getElementById("tot").textContent=(d.total||0).toLocaleString("en-NG");
+     setTimeout(function(){window.print();},400);
+   }catch(e){document.body.innerHTML="<p>Could not load.</p>";}
+ })();
+</script></body></html>

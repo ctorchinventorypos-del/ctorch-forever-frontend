@@ -18,6 +18,7 @@ const links = [
   { to: '/expenses', label: 'Daily expenses', ico: '🧾', feat: 'expense.view' },
   { to: '/activity', label: 'Activity record', ico: '📋', feat: 'activity.view' },
   { to: '/transfer-records', label: 'Transfer records', ico: '🔁', feat: 'transfers.records' },
+  { to: '/stock-as-at', label: 'Stock as at date', ico: '📅', feat: 'stock.asat' },
   { to: '/reports', label: 'Reports', ico: '📊', feat: 'reports.open' },
   { to: '/account', label: 'Account', ico: '💵', adminOnly: true },
   { to: '/branches', label: 'Branches', ico: '🏬', feat: 'branches.manage' },

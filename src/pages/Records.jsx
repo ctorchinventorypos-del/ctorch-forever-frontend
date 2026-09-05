@@ -41,6 +41,7 @@ export default function Records() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [rows, setRows] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   const cfg = TYPES.find((t) => t.key === typeKey);
@@ -105,8 +106,17 @@ export default function Records() {
     window.open(`/payment-receipt.html?id=${id}`, '_blank');
   }
 
+  // Search across every field of a record (invoice, customer, branch, amount, method, note, date…).
+  const matches = (r) => {
+    const t = search.trim().toLowerCase();
+    if (!t) return true;
+    const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' }).toLowerCase() : '';
+    return dateStr.includes(t) || Object.values(r).some((v) => v != null && String(v).toLowerCase().includes(t));
+  };
+  const visibleRows = rows.filter(matches);
+
   // running total for the footer
-  const total = rows.reduce((s, r) => s + Number(r.total_amount ?? r.amount ?? r.refund_amount ?? 0), 0);
+  const total = visibleRows.reduce((sum, r) => sum + Number(r.total_amount ?? r.amount ?? r.refund_amount ?? 0), 0);
 
   return (
     <div>
@@ -119,6 +129,7 @@ export default function Records() {
         <select className="input" style={{ maxWidth: 220 }} value={typeKey} onChange={(e) => setTypeKey(e.target.value)}>
           {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
         </select>
+        <input className="input grow" style={{ minWidth: 160 }} placeholder="🔎 Search (invoice, customer, amount, branch…)" value={search} onChange={(e) => setSearch(e.target.value)} />
         <label className="hint" style={{ alignSelf: 'center' }}>From</label>
         <input className="input" style={{ maxWidth: 160 }} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         <label className="hint" style={{ alignSelf: 'center' }}>To</label>
@@ -128,7 +139,7 @@ export default function Records() {
 
       {loading ? (
         <Spinner full />
-      ) : rows.length === 0 ? (
+      ) : visibleRows.length === 0 ? (
         <div className="card card-pad">
           <div className="empty">
             <div className="big">🗂️</div>
@@ -148,7 +159,7 @@ export default function Records() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {visibleRows.map((r) => (
                     <tr key={r.id}>
                       <td><span className="code">{r.invoice_number}</span></td>
                       <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
@@ -168,7 +179,7 @@ export default function Records() {
                   <tr><th>Date</th><th>Customer</th><th>Received by</th><th className="num">Amount</th><th></th></tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {visibleRows.map((r) => (
                     <tr key={r.id}>
                       <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
                       <td>{r.customer_name}</td>
@@ -187,7 +198,7 @@ export default function Records() {
                   <tr><th>Date</th><th>Return No.</th><th>Customer</th><th>Back to</th><th className="num">Value</th><th></th></tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {visibleRows.map((r) => (
                     <tr key={r.id}>
                       <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
                       <td><span className="code">{r.return_number}</span></td>
@@ -209,7 +220,7 @@ export default function Records() {
                   <tr><th>Date</th><th>Product</th><th>Change</th><th className="num">Qty</th><th>Location</th><th>By</th></tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => {
+                  {visibleRows.map((r) => {
                     const labels = { restock: 'Restock', transfer: 'Transfer', sale: 'Sale', adjustment: 'Stock edit', return: 'Return' };
                     const where = r.movement_type === 'transfer' ? `${r.from_branch || '—'} → ${r.to_branch || '—'}` : (r.to_branch || r.from_branch || '—');
                     return (
@@ -233,7 +244,7 @@ export default function Records() {
                   <tr><th>Date added</th><th>Product</th><th>Code</th><th>Category</th><th className="num">In stock</th><th>Added by</th></tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {visibleRows.map((r) => (
                     <tr key={r.id} style={r.is_active === false ? { opacity: 0.55 } : null}>
                       <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
                       <td>{r.name}{r.is_active === false && <span className="tag tag-store" style={{ marginLeft: 6 }}>Deactivated</span>}</td>
@@ -250,12 +261,12 @@ export default function Records() {
             <tfoot>
               {cfg.kind === 'stock' || cfg.kind === 'product' ? (
                 <tr>
-                  <td colSpan="6" style={{ fontWeight: 700 }}>{rows.length} record{rows.length === 1 ? '' : 's'}</td>
+                  <td colSpan="6" style={{ fontWeight: 700 }}>{visibleRows.length} record{visibleRows.length === 1 ? '' : 's'}</td>
                 </tr>
               ) : (
                 <tr>
                   <td colSpan={cfg.kind === 'sale' ? 4 : cfg.kind === 'return' ? 4 : 3} style={{ fontWeight: 700 }}>
-                    {rows.length} record{rows.length === 1 ? '' : 's'}
+                    {visibleRows.length} record{visibleRows.length === 1 ? '' : 's'}
                   </td>
                   <td className="num" style={{ fontWeight: 800 }}>{naira(total)}</td>
                   <td></td>

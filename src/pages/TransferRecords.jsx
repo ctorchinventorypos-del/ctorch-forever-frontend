@@ -14,6 +14,7 @@ export default function TransferRecords() {
   const [to, setTo] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => { api('/branches/all').then(setBranches).catch(() => {}); }, []);
   useEffect(() => {
@@ -24,6 +25,8 @@ export default function TransferRecords() {
     setLoading(true);
     api(`/stock/branch-movements?${q.toString()}`).then(setData).catch(() => setData(null)).finally(() => setLoading(false));
   }, [branchId, from, to]);
+
+  const shown = (data?.movements || []).filter((m) => { const t = search.trim().toLowerCase(); if (!t) return true; return Object.values(m).some((v) => v != null && String(v).toLowerCase().includes(t)); });
 
   const fmt = (d) => new Date(d).toLocaleString('en-NG', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' });
   const branchName = (id) => { const b = branches.find((x) => String(x.id) === String(id)); return b ? `${b.company_code} · ${b.name}` : ''; };
@@ -51,6 +54,7 @@ export default function TransferRecords() {
           </div>
           <label className="subtle">From <input type="date" className="input" value={from} max={new Date().toISOString().slice(0,10)} onChange={(e) => setFrom(e.target.value)} /></label>
           <label className="subtle">To <input type="date" className="input" value={to} max={new Date().toISOString().slice(0,10)} onChange={(e) => setTo(e.target.value)} /></label>
+          {branchId && <input className="input grow" style={{ minWidth: 150 }} placeholder="🔎 Search product, type, location…" value={search} onChange={(e) => setSearch(e.target.value)} />}
           {branchId && <button className="btn btn-ghost" onClick={openPrint}>🖨️ Print</button>}
         </div>
       </div>
@@ -63,12 +67,12 @@ export default function TransferRecords() {
             <h2 className="grow">{branchName(branchId)}</h2>
             {data && <span className="subtle">In: <b style={{ color: 'var(--green-700)' }}>{data.total_in}</b> · Out: <b style={{ color: 'var(--clay)' }}>{data.total_out}</b></span>}
           </div>
-          {loading ? <p className="subtle">Loading…</p> : !data || data.movements.length === 0 ? <p className="subtle">No movements for this location in the selected range.</p> : (
+          {loading ? <p className="subtle">Loading…</p> : !data || shown.length === 0 ? <p className="subtle">No movements{search ? ' match your search' : ' for this location in the selected range'}.</p> : (
             <div className="table-wrap">
               <table className="t">
                 <thead><tr><th>When</th><th>In/Out</th><th>Product</th><th>Type</th><th>Other location</th><th className="num">Qty</th><th>By</th></tr></thead>
                 <tbody>
-                  {data.movements.map((m) => (
+                  {shown.map((m) => (
                     <tr key={m.id}>
                       <td>{fmt(m.created_at)}</td>
                       <td>{m.direction === 'in'

@@ -17,6 +17,7 @@ import Permissions from './pages/Permissions';
 import Expenses from './pages/Expenses';
 import Activity from './pages/Activity';
 import TransferRecords from './pages/TransferRecords';
+import StockAsAt from './pages/StockAsAt';
 import WarehouseSale from './pages/WarehouseSale';
 import Debtors from './pages/Debtors';
 import Quotations from './pages/Quotations';
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/activity" element={<Activity />} />
         <Route path="/transfer-records" element={<TransferRecords />} />
+        <Route path="/stock-as-at" element={<StockAsAt />} />
         <Route path="/branches" element={<Branches />} />
         <Route
           path="/users"

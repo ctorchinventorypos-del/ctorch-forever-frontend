@@ -29,6 +29,7 @@ export default function Expenses() {
   const [form, setForm] = useState({ amount: '', category: '', payment_method: 'cash', note: '', created_at: today() });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [search, setSearch] = useState('');
 
   const load = () => {
     const q = new URLSearchParams();
@@ -105,17 +106,18 @@ export default function Expenses() {
 
       <div className="card card-pad">
         <div className="toolbar-row">
-          <h2 className="grow">Expenses</h2>
+          <h2>Expenses</h2>
+          <input className="input grow" style={{ minWidth: 150 }} placeholder="🔎 Search category, note, method…" value={search} onChange={(e) => setSearch(e.target.value)} />
           <label className="subtle">From <input type="date" className="input" value={from} max={today()} onChange={(e) => setFrom(e.target.value)} /></label>
           <label className="subtle">To <input type="date" className="input" value={to} max={today()} onChange={(e) => setTo(e.target.value)} /></label>
         </div>
         <p style={{ margin: '4px 0 12px' }}><b>Total: {naira(data.total)}</b>{(from || to) ? ' (filtered)' : ''}</p>
-        {data.expenses.length === 0 ? <p className="subtle">No expenses yet.</p> : (
+        {(() => { const t = search.trim().toLowerCase(); const shown = (data.expenses||[]).filter((e) => !t || Object.values(e).some((v) => v != null && String(v).toLowerCase().includes(t))); return shown.length === 0 ? <p className="subtle">No expenses{search ? ' match your search' : ' yet'}.</p> : (
           <div className="table-wrap">
             <table className="t">
               <thead><tr><th>Date</th><th>Category</th><th>Method</th><th>Note</th><th>By</th><th className="num">Amount</th>{isAdmin && <th></th>}</tr></thead>
               <tbody>
-                {data.expenses.map((e) => (
+                {shown.map((e) => (
                   <tr key={e.id}>
                     <td>{fmtDate(e.created_at)}{isAdmin && <button className="linkbtn" title="Change date" style={{ marginLeft: 6 }} onClick={() => changeDate(e.id, e.created_at)}>✎</button>}</td>
                     <td>{e.category || '—'}</td>
@@ -129,7 +131,7 @@ export default function Expenses() {
               </tbody>
             </table>
           </div>
-        )}
+        ); })()}
       </div>
     </div>
   );

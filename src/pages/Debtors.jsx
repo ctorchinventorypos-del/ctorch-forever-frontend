@@ -36,6 +36,7 @@ export default function Debtors() {
   const { activeId, active } = useCompany();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -64,7 +65,7 @@ export default function Debtors() {
   // Split into buckets
   const grouped = BUCKETS.map((b) => ({
     ...b,
-    items: rows.filter((r) => b.test(daysOverdue(r.oldest_unpaid))),
+    items: rows.filter((r) => { const t = search.trim().toLowerCase(); const m = !t || (r.name||'').toLowerCase().includes(t) || (r.phone||'').toLowerCase().includes(t); return m && b.test(daysOverdue(r.oldest_unpaid)); }),
   }));
 
   return (
@@ -75,6 +76,12 @@ export default function Debtors() {
         <div className="spacer" />
         {!loading && <div className="subtle" style={{ fontWeight: 700 }}>Total owed: {naira(total)}</div>}
       </div>
+
+      {!loading && rows.length > 0 && (
+        <div className="card card-pad" style={{ marginBottom: 14 }}>
+          <input className="input" placeholder="🔎 Search by name or phone…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      )}
 
       {loading ? (
         <Spinner full />
