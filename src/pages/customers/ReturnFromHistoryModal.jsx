@@ -27,6 +27,7 @@ export default function ReturnFromHistoryModal({ customer, onClose, onSaved }) {
   const [lines, setLines] = useState([]);
   const [branchId, setBranchId] = useState('');
   const [note, setNote] = useState('');
+  const [refundMethod, setRefundMethod] = useState('cash');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const keyRef = useState(newKey())[0];
@@ -64,20 +65,19 @@ export default function ReturnFromHistoryModal({ customer, onClose, onSaved }) {
     setChoosing(true);
   }
 
-  // mode: 'refund' (cash back) | 'credit' (store credit) | 'swap' (exchange for other goods)
+  // mode: 'refund' | 'credit' | 'balance' (reduce debt) | 'swap'
   async function complete(mode) {
     setError('');
     if (mode === 'refund' && !can('return.refund')) return setError('You are not allowed to give cash refunds.');
     if (mode === 'swap' && !(isAdmin && can('return.swap'))) return setError('Only an admin can swap items.');
-    // A swap banks the value as credit, then a sale spends it on the new goods.
-    const refund_mode = mode === 'refund' ? 'refund' : 'credit';
     setBusy(true);
     try {
       const res = await api('/returns/customer', {
         method: 'POST',
         headers: { 'Idempotency-Key': keyRef },
         body: {
-          customer_id: customer.id, branch_id: branchId, refund_mode, note: note.trim(),
+          customer_id: customer.id, branch_id: branchId, refund_mode: mode, note: note.trim(),
+          refund_method: mode === 'refund' ? refundMethod : undefined,
           items: lines.map((l) => ({ product_id: l.product_id, quantity: l.quantity, unit_price: l.unit_price })),
         },
       });
@@ -102,14 +102,27 @@ export default function ReturnFromHistoryModal({ customer, onClose, onSaved }) {
             <h2 style={{ marginBottom: 4 }}>How is this return completed?</h2>
             <p className="subtle" style={{ marginBottom: 14 }}>Returning {naira(total)} of goods for {customer.name}.</p>
             <div style={{ display: 'grid', gap: 10 }}>
-              {can('return.refund') && (
-                <button className="btn btn-ghost" style={{ justifyContent: 'flex-start' }} onClick={() => complete('refund')} disabled={busy}>
-                  💵 Just return — refund the money (recorded as an expense)
+              {Number(customer.balance_owed) > 0 && (
+                <button className="btn btn-ghost" style={{ justifyContent: 'flex-start' }} onClick={() => complete('balance')} disabled={busy}>
+                  ↩️ Just a return — take it off their debt (owes {naira(customer.balance_owed)})
                 </button>
               )}
               <button className="btn btn-ghost" style={{ justifyContent: 'flex-start' }} onClick={() => complete('credit')} disabled={busy}>
                 🏦 Add credit — keep it as store credit for later
               </button>
+              {can('return.refund') && (
+                <div style={{ border: '1px solid var(--line)', borderRadius: 10, padding: 10 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>💵 Refund the money</div>
+                  <select className="input" value={refundMethod} onChange={(e) => setRefundMethod(e.target.value)} style={{ marginBottom: 8 }}>
+                    <option value="cash">Cash</option>
+                    <option value="pos">POS Card (Moniepoint)</option>
+                    <option value="transfer_moniepoint">Transfer - Moniepoint</option>
+                    <option value="transfer_zenith">Transfer - Zenith Bank</option>
+                    <option value="cheque">Cheque</option>
+                  </select>
+                  <button className="btn btn-ghost btn-block" onClick={() => complete('refund')} disabled={busy}>Refund {naira(total)}</button>
+                </div>
+              )}
               {isAdmin && can('return.swap') && (
                 <button className="btn btn-primary" style={{ justifyContent: 'flex-start' }} onClick={() => complete('swap')} disabled={busy}>
                   🔁 Swap with other item(s) — exchange for new goods

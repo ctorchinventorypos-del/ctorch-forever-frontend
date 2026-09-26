@@ -26,6 +26,17 @@ const ALL_TYPES = [
   { key: 'products_added',   label: 'Products added',     path: '/products?include_inactive=1',   kind: 'product' },
 ];
 
+
+// Human label for how a return was settled.
+const METHOD_LABEL = { cash: 'Cash', pos: 'POS', transfer_moniepoint: 'Transfer (Moniepoint)', transfer_zenith: 'Transfer (Zenith)', cheque: 'Cheque' };
+function returnTypeLabel(r) {
+  const m = r.refund_mode;
+  if (m === 'refund') return 'Refund' + (r.refund_method ? ` · ${METHOD_LABEL[r.refund_method] || r.refund_method}` : '');
+  if (m === 'balance') return 'Off debt';
+  if (m === 'swap') return 'Swap';
+  return 'Store credit';
+}
+
 export default function Records() {
   const { activeId, active } = useCompany();
   const { isAdmin, isSuperAdmin } = useAuth();
@@ -125,18 +136,25 @@ export default function Records() {
       <div className="page-head">
         <h1>Records</h1>
         <Tooltip text="Every transaction, by date. Pick a record type and a date range. Sales can be reprinted." />
+        <div className="spacer" />
+        {!loading && <span className="rec-summary">{visibleRows.length} record{visibleRows.length === 1 ? '' : 's'}{total ? ` · ${naira(total)}` : ''}</span>}
       </div>
 
-      <div className="toolbar-row">
-        <select className="input" style={{ maxWidth: 220 }} value={typeKey} onChange={(e) => setTypeKey(e.target.value)}>
-          {TYPES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
-        </select>
-        <input className="input grow" style={{ minWidth: 160 }} placeholder="🔎 Search (invoice, customer, amount, branch…)" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <label className="hint" style={{ alignSelf: 'center' }}>From</label>
-        <input className="input" style={{ maxWidth: 160 }} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-        <label className="hint" style={{ alignSelf: 'center' }}>To</label>
-        <input className="input" style={{ maxWidth: 160 }} type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-        {(from || to) && <button className="btn btn-ghost" onClick={() => { setFrom(''); setTo(''); }}>Clear</button>}
+      {/* Record-type selector: a scrollable pill row (touch friendly). */}
+      <div className="rec-tabs" role="tablist">
+        {TYPES.map((t) => (
+          <button key={t.key} role="tab" aria-selected={typeKey === t.key}
+            className={`rec-tab${typeKey === t.key ? ' on' : ''}`} onClick={() => setTypeKey(t.key)}>{t.label}</button>
+        ))}
+      </div>
+
+      <div className="card card-pad rec-filter">
+        <div className="search grow"><span className="mag">🔎</span>
+          <input className="input" placeholder="Search invoice, customer, amount, branch…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <label className="rec-date">From <input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
+        <label className="rec-date">To <input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+        {(from || to || search) && <button className="btn btn-ghost" onClick={() => { setFrom(''); setTo(''); setSearch(''); }}>Clear</button>}
       </div>
 
       {loading ? (
@@ -197,7 +215,7 @@ export default function Records() {
             {cfg.kind === 'return' && (
               <>
                 <thead>
-                  <tr><th>Date</th><th>Return No.</th><th>Customer</th><th>Back to</th><th className="num">Value</th><th></th></tr>
+                  <tr><th>Date</th><th>Return No.</th><th>Customer</th><th>Type</th><th>Back to</th><th className="num">Value</th><th></th></tr>
                 </thead>
                 <tbody>
                   {visibleRows.map((r) => (
@@ -205,6 +223,7 @@ export default function Records() {
                       <td>{fmtDate(r.created_at)}{isAdmin && ['sale','payment','return'].includes(cfg.kind) && <button className="linkbtn" title="Change this date" style={{ marginLeft: 6 }} onClick={() => changeDate(cfg.kind, r.id, r.created_at)}>✎</button>}</td>
                       <td><span className="code">{r.return_number}</span></td>
                       <td>{r.customer_name}</td>
+                      <td>{returnTypeLabel(r)}</td>
                       <td className="subtle">{r.branch_name}</td>
                       <td className="num">{naira(r.total_amount)}</td>
                       <td className="num">
@@ -267,7 +286,7 @@ export default function Records() {
                 </tr>
               ) : (
                 <tr>
-                  <td colSpan={cfg.kind === 'sale' ? 4 : cfg.kind === 'return' ? 4 : 3} style={{ fontWeight: 700 }}>
+                  <td colSpan={cfg.kind === 'sale' ? 4 : cfg.kind === 'return' ? 5 : 3} style={{ fontWeight: 700 }}>
                     {visibleRows.length} record{visibleRows.length === 1 ? '' : 's'}
                   </td>
                   <td className="num" style={{ fontWeight: 800 }}>{naira(total)}</td>

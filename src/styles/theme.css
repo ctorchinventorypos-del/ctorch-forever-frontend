@@ -341,3 +341,215 @@ table.t .num{ text-align:right; font-variant-numeric:tabular-nums; }
 .switch input:checked + .slider{ background:var(--green-600, #1f7a44); }
 .switch input:checked + .slider::before{ transform:translateX(20px); }
 .switch input:disabled + .slider{ opacity:.5; }
+
+/* ============================================================
+   PROFESSIONAL UPGRADE LAYER  (v2 design system)
+   Appended so it overrides the base without renaming anything.
+   Goals: richer hierarchy, tactile components, true fluidity,
+   accessibility, and safe rendering on notched/foldable devices.
+   ============================================================ */
+:root{
+  /* Elevation ramp */
+  --shadow-sm:0 1px 2px rgba(16,40,28,.06);
+  --shadow:0 1px 2px rgba(16,40,28,.05), 0 6px 16px rgba(16,40,28,.06);
+  --shadow-md:0 2px 4px rgba(16,40,28,.05), 0 12px 28px rgba(16,40,28,.09);
+  --shadow-lg:0 10px 40px rgba(16,40,28,.16);
+  --ring:0 0 0 3px rgba(42,145,96,.30);
+  --grad-primary:linear-gradient(135deg, var(--green-600), var(--green-800));
+  --grad-surface:linear-gradient(180deg, #ffffff, #fbfefc);
+  --radius-lg:18px;
+  --tap:44px;
+  --dur:.16s;
+}
+
+*{ -webkit-tap-highlight-color:transparent; }
+html{ scroll-behavior:smooth; }
+body{ background:
+    radial-gradient(1200px 600px at 100% -5%, rgba(42,145,96,.06), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(21,98,60,.05), transparent 55%),
+    var(--bg);
+  letter-spacing:-.005em; }
+
+/* ---- Typography rhythm ---- */
+h1{ letter-spacing:-.02em; line-height:1.15; }
+h2{ letter-spacing:-.015em; }
+.subtle{ line-height:1.5; }
+
+/* ---- App shell: give the sidebar depth + a sticky, frosted topbar ---- */
+.sidebar{ background:var(--grad-surface); box-shadow:1px 0 0 var(--line); padding-bottom:max(18px, env(safe-area-inset-bottom)); }
+.brand .mark{ background:var(--grad-primary); box-shadow:0 4px 12px rgba(21,98,60,.28); }
+.content{ padding-left:max(clamp(14px,2.4vw,36px), env(safe-area-inset-left)); padding-right:max(clamp(14px,2.4vw,36px), env(safe-area-inset-right)); }
+
+/* Nav links: animated active indicator + hover slide */
+.nav-link{ position:relative; border-radius:11px; transition:background var(--dur), color var(--dur), transform var(--dur); font-weight:600; }
+.nav-link:hover{ transform:translateX(2px); }
+.nav-link.active{ background:var(--green-100); }
+.nav-link.active::before{ content:""; position:absolute; left:-14px; top:50%; transform:translateY(-50%); width:4px; height:60%; border-radius:0 4px 4px 0; background:var(--grad-primary); }
+
+/* ---- Cards: crisp border + soft elevation, gentle hover lift ---- */
+.card{ background:var(--grad-surface); border:1px solid var(--line); box-shadow:var(--shadow); border-radius:var(--radius-lg); transition:box-shadow var(--dur), transform var(--dur), border-color var(--dur); }
+.card.stat{ position:relative; overflow:hidden; }
+.card.stat::after{ content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--grad-primary); opacity:.9; }
+.card.stat .value{ letter-spacing:-.02em; }
+.action{ background:var(--grad-surface); border-radius:var(--radius-lg); }
+.action:hover{ box-shadow:var(--shadow-md); transform:translateY(-2px); border-color:var(--green-600); }
+.action .big{ background:var(--green-100); box-shadow:inset 0 0 0 1px rgba(42,145,96,.18); }
+
+/* ---- Buttons: tactile, gradient primary, clear focus ---- */
+.btn{ border-radius:11px; font-weight:700; letter-spacing:-.01em; transition:transform var(--dur), box-shadow var(--dur), background var(--dur), border-color var(--dur); }
+.btn:active:not(:disabled){ transform:translateY(1px) scale(.99); }
+.btn:focus-visible{ outline:none; box-shadow:var(--ring); }
+.btn-primary{ background:var(--grad-primary); box-shadow:0 2px 8px rgba(21,98,60,.24); }
+.btn-primary:hover:not(:disabled){ box-shadow:0 6px 18px rgba(21,98,60,.32); }
+.btn-ghost{ background:#fff; }
+.btn-ghost:hover{ box-shadow:var(--shadow-sm); }
+
+/* ---- Inputs: comfortable, clear focus ring ---- */
+.input, select.input, textarea.input{ border-radius:11px; transition:border-color var(--dur), box-shadow var(--dur); }
+.input:focus, select.input:focus, textarea.input:focus{ box-shadow:var(--ring); }
+.field label{ letter-spacing:-.01em; }
+
+/* ---- Tables: sticky header, zebra, row hover, rounded frame ---- */
+.table-wrap{ border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+table.t thead th{ position:sticky; top:0; z-index:1; background:var(--surface-2); backdrop-filter:saturate(1.2); }
+table.t tbody tr{ transition:background var(--dur); }
+table.t tbody tr:nth-child(even) td{ background:rgba(238,247,241,.35); }
+table.t tbody tr:hover td{ background:var(--green-50); }
+table.t .num{ font-feature-settings:"tnum" 1; }
+
+/* ---- Segmented + tabs: pill polish ---- */
+.seg{ box-shadow:inset 0 1px 2px rgba(16,40,28,.05); }
+.seg button{ transition:background var(--dur), color var(--dur), box-shadow var(--dur); }
+.seg button.on{ box-shadow:0 2px 8px rgba(21,98,60,.28); }
+
+/* ---- Modals: smooth entrance, frosted backdrop, safe insets ---- */
+.modal-backdrop{ backdrop-filter:blur(3px); animation:fadeIn var(--dur) ease-out; padding:max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom)); }
+.modal{ border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); animation:popIn .18s cubic-bezier(.2,.9,.3,1.1); }
+@keyframes fadeIn{ from{ opacity:0; } to{ opacity:1; } }
+@keyframes popIn{ from{ opacity:0; transform:translateY(8px) scale(.98); } to{ opacity:1; transform:none; } }
+
+/* ---- Badges / code chips ---- */
+.code{ font-weight:600; }
+.tag, .code{ letter-spacing:-.01em; }
+
+/* ---- Banners ---- */
+.banner-error, .banner-ok{ border-radius:12px; }
+
+/* ---- Accessibility: visible keyboard focus everywhere ---- */
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible{ outline:none; box-shadow:var(--ring); border-radius:8px; }
+@media (prefers-reduced-motion:reduce){
+  *, *::before, *::after{ animation-duration:.001ms !important; transition-duration:.001ms !important; scroll-behavior:auto !important; }
+}
+@media (prefers-contrast:more){
+  :root{ --line:#9fbcab; --line-strong:#7aa38c; --muted:#3f5247; }
+}
+
+/* ============================================================
+   FLUID RESPONSIVENESS — one design that fits every device
+   class (small Android phones → foldables → tablets/iPads →
+   laptops → ultra-wide), using continuous sizing + safe areas.
+   ============================================================ */
+
+/* Ultra-small phones (Galaxy Fold cover ~280–360px) */
+@media (max-width:360px){
+  .content{ padding-top:12px; }
+  h1{ font-size:19px; }
+  .btn{ padding:9px 12px; font-size:13px; }
+  .card-pad{ padding:13px; }
+  .stat .value{ font-size:22px; }
+  .table-wrap{ border-radius:12px; }
+  .modal-foot{ position:sticky; bottom:0; background:var(--surface); }
+}
+
+/* Standard phones */
+@media (min-width:361px) and (max-width:640px){
+  .page-head{ align-items:flex-start; }
+  .toolbar-row{ gap:8px; }
+  .toolbar-row .btn{ flex:1 1 auto; justify-content:center; }
+}
+
+/* Foldables unfolded + small tablets (portrait ~600–900px) */
+@media (min-width:600px) and (max-width:900px){
+  .grid-2{ grid-template-columns:repeat(2,1fr); }
+}
+
+/* Tablets / iPads landscape & small laptops */
+@media (min-width:901px) and (max-width:1280px){
+  .content{ max-width:1120px; }
+}
+
+/* Large laptops / desktops */
+@media (min-width:1281px) and (max-width:1600px){
+  .content{ max-width:1240px; }
+}
+
+/* Big monitors / ultra-wide: cap measure, keep it centered & airy */
+@media (min-width:1601px){
+  .content{ max-width:1440px; }
+  body{ font-size:16px; }
+}
+@media (min-width:2200px){
+  .content{ max-width:1640px; }
+}
+
+/* Touch devices: enforce comfortable hit targets everywhere */
+@media (pointer:coarse){
+  .btn, .input, select.input, .nav-link, .seg button, .tabs button, .linkbtn{ min-height:var(--tap); }
+  .linkbtn{ display:inline-flex; align-items:center; padding:0 4px; }
+  table.t th, table.t td{ padding-top:13px; padding-bottom:13px; }
+}
+
+/* Short landscape (phones on their side): tighten vertical rhythm */
+@media (max-height:480px) and (orientation:landscape){
+  .content{ padding-top:10px; padding-bottom:24px; }
+  .page-head{ margin-bottom:10px; }
+  .modal{ max-height:96vh; }
+}
+
+/* Honour display notches/rounded corners on the app frame */
+@supports (padding:max(0px)){
+  .topbar{ padding-top:max(10px, env(safe-area-inset-top)); }
+}
+
+/* ============================================================
+   DASHBOARD (redesign) — calm KPI band + tactile quick actions
+   ============================================================ */
+.dash-hero{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:clamp(16px,2.2vw,26px); }
+.dash-hero h1{ font-size:clamp(22px,1.4rem+1vw,30px); }
+.dash-hero .subtle{ margin-top:4px; }
+.co-chip{ flex:0 0 auto; font-weight:800; font-size:12px; letter-spacing:.06em; color:#fff; background:var(--grad-primary); padding:6px 12px; border-radius:999px; box-shadow:0 4px 12px rgba(21,98,60,.25); }
+.dash-h2{ font-size:15px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:clamp(18px,2.4vw,28px) 0 12px; font-weight:800; }
+
+.kpi-grid{ display:grid; gap:clamp(10px,1.4vw,16px); grid-template-columns:repeat(auto-fit, minmax(min(100%, 210px), 1fr)); }
+.kpi{ background:var(--grad-surface); border:1px solid var(--line); border-radius:var(--radius-lg); padding:clamp(14px,1.4vw,18px); box-shadow:var(--shadow); position:relative; overflow:hidden; transition:box-shadow var(--dur), transform var(--dur), border-color var(--dur); }
+.kpi::after{ content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--grad-primary); opacity:.85; }
+.kpi-click{ cursor:pointer; }
+.kpi-click:hover{ box-shadow:var(--shadow-md); transform:translateY(-2px); border-color:var(--green-600); }
+.kpi-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.kpi-label{ font-size:12.5px; font-weight:700; color:var(--muted); letter-spacing:.01em; }
+.kpi-icon{ font-size:18px; opacity:.9; }
+.kpi-value{ font-size:clamp(22px,1.3rem+1vw,30px); font-weight:800; letter-spacing:-.02em; color:var(--green-900); margin-top:8px; font-feature-settings:"tnum" 1; line-height:1.1; }
+.kpi-sub{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+.action-grid{ display:grid; gap:clamp(10px,1.4vw,16px); grid-template-columns:repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.action{ position:relative; }
+.action-arrow{ margin-left:auto; font-size:18px; color:var(--green-600); opacity:0; transform:translateX(-6px); transition:opacity var(--dur), transform var(--dur); }
+.action:hover .action-arrow{ opacity:1; transform:none; }
+
+/* ============================================================
+   RECORDS (redesign) — pill tabs + filter bar + summary chip
+   ============================================================ */
+.rec-summary{ font-weight:800; color:var(--green-900); font-size:14px; background:var(--green-50); border:1px solid var(--green-100); padding:6px 12px; border-radius:999px; }
+.rec-tabs{ display:flex; gap:8px; overflow-x:auto; padding:4px 2px 10px; margin-bottom:6px; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
+.rec-tabs::-webkit-scrollbar{ height:6px; } .rec-tabs::-webkit-scrollbar-thumb{ background:var(--line-strong); border-radius:6px; }
+.rec-tab{ flex:0 0 auto; border:1px solid var(--line-strong); background:#fff; color:var(--muted); font-family:var(--font); font-weight:700; font-size:13.5px; padding:9px 16px; border-radius:999px; cursor:pointer; white-space:nowrap; transition:all var(--dur); min-height:40px; }
+.rec-tab:hover{ background:var(--green-50); color:var(--green-800); }
+.rec-tab.on{ background:var(--grad-primary); color:#fff; border-color:transparent; box-shadow:0 2px 10px rgba(21,98,60,.28); }
+.rec-filter{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; padding:12px 14px; }
+.rec-filter .search{ min-width:180px; }
+.rec-date{ display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); font-weight:600; white-space:nowrap; }
+.rec-date .input{ max-width:150px; }
+@media (max-width:560px){
+  .rec-filter{ flex-direction:column; align-items:stretch; }
+  .rec-date{ justify-content:space-between; } .rec-date .input{ max-width:60%; }
+}
