@@ -15,6 +15,7 @@ import Spinner from '../components/Spinner';
 import SearchableSelect from '../components/SearchableSelect';
 import NumberField from '../components/NumberField';
 import SplitPayment, { emptyPayment, paymentBody } from '../components/SplitPayment';
+import { usePerms } from '../context/PermissionsContext';
 import AddCustomerModal from './customers/AddCustomerModal';
 import ReturnModal from './sales/ReturnModal';
 
@@ -54,6 +55,8 @@ export default function Sales() {
   const [stockMap, setStockMap] = useState({});      // product_id -> qty at branch
   const [cart, setCart] = useState([]);
   const [amountPaid, setAmountPaid] = useState('');
+  const [useCredit, setUseCredit] = useState(false);
+  const { can } = usePerms();
   const [item, setItem] = useState({ product_id: '', sold_as: 'piece', quantity: '', unit_price: '', total: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -80,6 +83,25 @@ export default function Sales() {
     const type = saleType === 'cash' ? 'general' : saleType;
     api(`/customers?type=${type}`).then(setCustomers).catch(() => {});
   }, [saleType, activeId]);
+
+  // Arriving here from a return "Swap": preselect that customer (with their
+  // just-banked credit) and turn store credit on, so the swap-in goods are
+  // paid for by the returned value and only the difference is collected.
+  const [swap, setSwap] = useState(null);
+  useEffect(() => {
+    const st = location.state;
+    if (st && st.swapCustomerId) { setSwap({ customerId: String(st.swapCustomerId), fromReturn: st.swapFromReturn }); window.history.replaceState({}, ''); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (!swap) return;
+    api(`/customers/${swap.customerId}`).then((c) => {
+      setCustomers((prev) => (prev.find((x) => String(x.id) === String(c.id)) ? prev : [{ id: c.id, name: c.name, phone: c.phone, store_credit: c.store_credit, customer_type: c.customer_type }, ...prev]));
+      setCustomerId(String(c.id));
+      setUseCredit(true);
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [swap]);
 
   // Stock available at the chosen branch
   const refreshStock = useCallback(() => {
@@ -217,13 +239,14 @@ export default function Sales() {
           created_at: actionDate,
           customer_id: customerId,
           amount_paid: saleType === 'cash' ? undefined : Number(amountPaid) || 0,
+          apply_credit: useCredit ? availableCredit : 0,
           quote_id: quoteId,
           items: cart.map((c) => ({ product_id: c.product_id, sold_as: c.sold_as, pack_size: c.pack_size, quantity: c.quantity, unit_price: c.unit_price })),
         },
       });
       setDone(res);
       saleKeyRef.current = newKey(); // next sale = new action
-      setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setQuoteId(null); setPay(emptyPayment()); setActionDate(new Date().toISOString().slice(0,10));
+      setCart([]); setCustomerId(''); setAmountPaid(''); setFromQuote(null); setQuoteId(null); setPay(emptyPayment()); setUseCredit(false); setSwap(null); setActionDate(new Date().toISOString().slice(0,10));
       // refresh availability after the sale
       if (branchId) api(`/stock?branch_id=${branchId}`).then((rows) => {
         const m = {}; rows.forEach((r) => { m[r.product_id] = r.quantity; }); setStockMap(m);
@@ -275,6 +298,11 @@ export default function Sales() {
           Converting sales order <b>{fromQuote}</b>. Choose the branch and sale type, then complete it.
         </div>
       )}
+      {swap && (
+        <div className="banner-error" style={{ background: '#e8f5ec', borderColor: '#bfe3cd', color: 'var(--green-800)' }}>
+          🔁 Swap for return <b>{swap.fromReturn}</b>. The returned value is applied as credit — add the swap-in goods, and the customer pays only the difference. A receipt prints on completion.
+        </div>
+      )}
 
       <div className="card card-pad" style={{ marginBottom: 16 }}>
         <div className="row2">
@@ -316,6 +344,12 @@ export default function Sales() {
               </div>
               <button title="Add a new customer without leaving the sale." className="btn btn-ghost" onClick={() => setAddCust(true)}>+ New</button>
             </div>
+            {availableCredit > 0 && can('credit.apply') && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, color: 'var(--green-700)', fontWeight: 500 }}>
+                <input type="checkbox" checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} />
+                Use store credit ({naira(availableCredit)} available)
+              </label>
+            )}
           </div>
         )}
       </div>

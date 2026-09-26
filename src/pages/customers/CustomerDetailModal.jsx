@@ -9,12 +9,14 @@ import { api } from '../../api/client';
 import { naira } from '../../utils/format';
 import RecordPaymentModal from './RecordPaymentModal';
 import RecordReturnModal from './RecordReturnModal';
+import ReturnFromHistoryModal from './ReturnFromHistoryModal';
 import { useAuth } from '../../context/AuthContext';
 import { usePerms } from '../../context/PermissionsContext';
 
 export default function CustomerDetailModal({ customerId, onClose, onChanged }) {
   const { isAdmin } = useAuth();
   const { can } = usePerms();
+  const [returning, setReturning] = useState(false);
   const [data, setData] = useState(null);
   const [sub, setSub] = useState(null); // 'payment' | 'return'
 
@@ -65,15 +67,21 @@ export default function CustomerDetailModal({ customerId, onClose, onChanged }) 
               <div className={`amt owed${Number(data.balance_owed) === 0 ? ' zero' : ''}`}>
                 {naira(data.balance_owed)}
               </div>
+              {Number(data.store_credit) > 0 && (
+                <div className="subtle" style={{ marginTop: 4, color: 'var(--green-700)', fontWeight: 700 }}>
+                  Store credit available: {naira(data.store_credit)}
+                </div>
+              )}
             </div>
             <button className="btn btn-primary" onClick={() => setSub('payment')}>Record payment</button>
-            <button className="btn btn-ghost" onClick={() => setSub('return')}>Record return</button>
+            {can('return.record') && <button className="btn btn-ghost" onClick={() => setReturning(true)}>Record return</button>}
             <button className="btn btn-ghost" onClick={() => window.open(`/statement.html?id=${customerId}`, '_blank')}>📄 Statement</button>
             {isAdmin && <button className="btn btn-ghost" onClick={editBalance}>✏️ Edit balance</button>}
             {can('customer.upgrade') && data.customer_type !== 'reseller' && <button className="btn btn-ghost" onClick={upgrade}>⬆️ Upgrade to distributor</button>}
           </div>
           {data.phone && <p className="subtle" style={{ margin: '4px 0 0' }}>📞 {data.phone}</p>}
           <p className="subtle" style={{ margin: '2px 0 0' }}>Shared customer · balance is the combined debt across both companies.</p>
+          {returning && <ReturnFromHistoryModal customer={data} onClose={() => setReturning(false)} onSaved={() => { setReturning(false); load(); if (onChanged) onChanged(); }} />}
 
           <div className="sectionhead">Sales</div>
           {data.sales.length === 0 ? (
