@@ -305,7 +305,7 @@ function BranchTable({ rows, isAdmin }) {
 }
 
 function InventoryReport({ data, isAdmin }) {
-  const { items, totals } = data;
+  const { items = [], totals = {} } = data || {};
   return (
     <>
       <div className="grid grid-3" style={{ marginBottom: 16 }}>

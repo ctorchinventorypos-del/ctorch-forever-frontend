@@ -221,6 +221,8 @@ export default function Sales() {
 
   const removeItem = (i) => setCart(cart.filter((_, idx) => idx !== i));
   const total = cart.reduce((s, c) => s + c.subtotal, 0);
+  const selectedCustomer = customers.find((c) => String(c.id) === String(customerId));
+  const availableCredit = selectedCustomer ? Number(selectedCustomer.store_credit || 0) : 0;
 
   async function complete() {
     setError('');

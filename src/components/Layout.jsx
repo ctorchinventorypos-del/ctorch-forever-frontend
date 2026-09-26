@@ -3,15 +3,17 @@
 //  On mobile the sidebar slides in, with a tap-to-close overlay.
 // ============================================================
 import { useState, useEffect, useRef } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { useAuth } from '../context/AuthContext';
+import ErrorBoundary from './ErrorBoundary';
 
 // Auto sign-out after this many minutes with no activity.
 const IDLE_MINUTES = 30;
 
 export default function Layout() {
+  const location = useLocation();
   const { logout, user } = useAuth();
   const timer = useRef(null);
 
@@ -44,7 +46,9 @@ export default function Layout() {
       <div className="main">
         <Topbar onMenu={() => setMenuOpen((v) => !v)} />
         <div className="content">
-          <Outlet />
+          <ErrorBoundary key={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </div>
     </div>

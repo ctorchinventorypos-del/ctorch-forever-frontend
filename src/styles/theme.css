@@ -553,3 +553,13 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible{ outline:none; b
   .rec-filter{ flex-direction:column; align-items:stretch; }
   .rec-date{ justify-content:space-between; } .rec-date .input{ max-width:60%; }
 }
+
+/* ---- Customer detail: wrap the action buttons (no horizontal overflow) ---- */
+.balance-hero{ flex-wrap:wrap; }
+.balance-hero > button{ flex:0 1 auto; }
+.balance-hero .amt{ min-width:0; }
+@media (max-width:520px){
+  .balance-hero{ gap:8px; }
+  .balance-hero > button{ flex:1 1 46%; justify-content:center; }
+}
+.modal-body{ overflow-x:hidden; }
