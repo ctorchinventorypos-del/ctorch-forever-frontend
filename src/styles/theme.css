@@ -563,3 +563,40 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible{ outline:none; b
   .balance-hero > button{ flex:1 1 46%; justify-content:center; }
 }
 .modal-body{ overflow-x:hidden; }
+
+/* ============================================================
+   CROSS-BROWSER MOBILE VIEWPORT FIX
+   Mobile browsers (Chrome / Brave / Safari) overlay dynamic
+   toolbars on top of the 100vh area, hiding the bottom of the
+   scrolling menu (Users / Permissions). Use dynamic viewport
+   units with fallbacks, and give the mobile menu real clearance.
+   ============================================================ */
+.app{ min-height:100vh; min-height:100svh; min-height:100dvh; }
+.login-wrap{ min-height:100vh; min-height:100dvh; }
+
+/* Desktop sidebar (sticky) — dvh keeps it exact under any browser UI */
+.sidebar{ height:100vh; height:100dvh; }
+
+@media (max-width:768px){
+  .sidebar{
+    /* Off-canvas drawer: full dynamic height, always scrollable, and a
+       generous bottom pad so the LAST item clears the browser's URL bar
+       and navigation buttons even when dvh isn't supported. */
+    height:100vh; height:100dvh;
+    max-height:100vh; max-height:100dvh;
+    overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+    padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 88px);
+  }
+}
+
+/* Old iOS Safari (no dvh): fill the visible area, not the full screen. */
+@supports (-webkit-touch-callout:none){
+  @supports not (height:100dvh){
+    .app{ min-height:-webkit-fill-available; }
+    @media (max-width:768px){ .sidebar{ height:-webkit-fill-available; } }
+  }
+}
+
+/* A spacer at the very end of the menu guarantees the last link can be
+   scrolled fully into view above any browser chrome. */
+.sidebar::after{ content:""; display:block; flex:0 0 auto; height:env(safe-area-inset-bottom, 0px); }
